@@ -436,15 +436,20 @@ body { font-family: 'Space Grotesk', sans-serif; background: linear-gradient(135
 </div>
 <script>
 async function login(){
-  const id=document.getElementById('loginId').value;
-  const password=document.getElementById('loginPassword').value;
-  if(!id){document.getElementById('loginError').innerHTML='<div class="error">Please enter your ID</div>';return;}
-  let url='/api/login?id='+encodeURIComponent(id);
-  if(password){url+='&password='+encodeURIComponent(password);}
-  const r=await fetch(url);
-  const o=await r.json();
-  if(o.success){window.location.href='/dashboard?user='+encodeURIComponent(id);}
-  else{document.getElementById('loginError').innerHTML='<div class="error">'+o.error+'</div>';}
+  try {
+    const id=document.getElementById('loginId').value;
+    const password=document.getElementById('loginPassword').value;
+    if(!id){document.getElementById('loginError').innerHTML='<div class="error">Please enter your ID</div>';return;}
+    let url='/api/login?id='+encodeURIComponent(id);
+    if(password){url+='&password='+encodeURIComponent(password);}
+    const r=await fetch(url);
+    const o=await r.json();
+    if(o.success){window.location.href='/dashboard?user='+encodeURIComponent(id);}
+    else{document.getElementById('loginError').innerHTML='<div class="error">'+o.error+'</div>';}
+  } catch(e) {
+    console.error('Login error:', e);
+    document.getElementById('loginError').innerHTML='<div class="error">Login failed. Try again.</div>';
+  }
 }
 <\/script></body></html>`;
 
