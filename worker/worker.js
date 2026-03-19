@@ -581,12 +581,25 @@ async function handleRequest(request) {
     if (password) {
       const human = await verifyHumanPassword(userId, password);
       if (human) return new Response(JSON.stringify({ success: true, human, type: "human" }), { headers: { "Content-Type": "application/json", ...cors } });
+      // If password provided but wrong
+      const existingHuman = await getHuman(userId);
+      if (existingHuman && !existingHuman.password_hash) {
+        // No password set - set it now
+        existingHuman.password_hash = simpleHash(password);
+        await saveHuman(existingHuman);
+        return new Response(JSON.stringify({ success: true, human: existingHuman, type: "human" }), { headers: { "Content-Type": "application/json", ...cors } });
+      }
       return new Response(JSON.stringify({ error: "Invalid credentials" }), { status: 401, headers: { "Content-Type": "application/json", ...cors } });
     }
     
-    // No password - check if exists (for agents or humans without password)
+    // No password - allow legacy login (for humans without password) or agents
     const human = await getHuman(userId);
-    if (human) return new Response(JSON.stringify({ success: true, human, type: "human" }), { headers: { "Content-Type": "application/json", ...cors } });
+    if (human) {
+      if (human.password_hash) {
+        return new Response(JSON.stringify({ error: "Password required" }), { status: 401, headers: { "Content-Type": "application/json", ...cors } });
+      }
+      return new Response(JSON.stringify({ success: true, human, type: "human" }), { headers: { "Content-Type": "application/json", ...cors } });
+    }
     const agent = await getAgent(userId);
     if (agent) return new Response(JSON.stringify({ success: true, agent, type: "agent" }), { headers: { "Content-Type": "application/json", ...cors } });
     return new Response(JSON.stringify({ error: "User not found" }), { status: 404, headers: { "Content-Type": "application/json", ...cors } });
@@ -607,6 +620,33 @@ async function handleRequest(request) {
       const body = await request.json();
       const result = await onboardHuman(body);
       return new Response(JSON.stringify(result), { headers: { "Content-Type": "application/json", ...cors } });
+    } catch (e) {
+      return new Response(JSON.stringify({ success: false, error: e.message }), { status: 500, headers: { "Content-Type": "application/json", ...cors } });
+    }
+  }
+  
+  // Set password for existing user
+  if (path === "/api/password" && method === "POST") {
+    try {
+      const body = await request.json();
+      const { id, password } = body;
+      if (!id || !password) return new Response(JSON.stringify({ success: false, error: "id and password required" }), { status: 400, headers: { "Content-Type": "application/json", ...cors } });
+      
+      // Try human first
+      let human = await getHuman(id);
+      if (human) {
+        human.password_hash = simpleHash(password);
+        await saveHuman(human);
+        return new Response(JSON.stringify({ success: true, message: "Password set for human" }), { headers: { "Content-Type": "application/json", ...cors } });
+      }
+      
+      // Try agent
+      let agent = await getAgent(id);
+      if (agent) {
+        return new Response(JSON.stringify({ success: false, error: "Agents don't use passwords" }), { status: 400, headers: { "Content-Type": "application/json", ...cors } });
+      }
+      
+      return new Response(JSON.stringify({ success: false, error: "User not found" }), { status: 404, headers: { "Content-Type": "application/json", ...cors } });
     } catch (e) {
       return new Response(JSON.stringify({ success: false, error: e.message }), { status: 500, headers: { "Content-Type": "application/json", ...cors } });
     }
