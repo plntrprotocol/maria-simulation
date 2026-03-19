@@ -477,10 +477,24 @@ body { font-family: 'Space Grotesk', sans-serif; background: linear-gradient(135
 <body>
 <div class="container">
   <div class="header">
-    <div class="logo"><h1>🤖 FLOCK DASHBOARD</h1></div>
+    <div class="logo">
+      <h1>🤖 FLOCK DASHBOARD</h1>
+      <div id="userWelcome" style="color:#888;font-size:14px;margin-top:5px;">Welcome, <span id="userName">...</span></div>
+    </div>
     <div><span class="badge">FLOCK HUB</span></div>
   </div>
-  <div class="grid">
+  
+  <!-- Create Flock Section (shown when no flock) -->
+  <div id="noFlockSection" style="display:none;">
+    <div class="card" style="text-align:center;padding:40px;margin-bottom:20px;">
+      <h2 style="font-size:24px;margin-bottom:15px;">You don't have a flock yet</h2>
+      <p style="color:#888;margin-bottom:25px;">Create a flock to connect with agents and other humans.</p>
+      <input type="text" id="flockName" placeholder="Flock Name" style="padding:12px;width:250px;background:#1a1a2e;border:1px solid #2a2a4a;border-radius:8px;color:white;font-size:16px;margin-right:10px;">
+      <button class="btn" onclick="createFlock()">Create Flock</button>
+    </div>
+  </div>
+  
+  <div class="grid" id="flockDashboard" style="display:none;">
     <div class="card">
       <h2>🦅 The Flock</h2>
       <div class="flock-grid" id="flockMembers">
@@ -505,19 +519,36 @@ body { font-family: 'Space Grotesk', sans-serif; background: linear-gradient(135
 const userId = new URLSearchParams(window.location.search).get('user') || new URLSearchParams(window.location.search).get('agent');
 
 async function loadFlock() {
+  if (!userId) {
+    window.location.href = '/login';
+    return;
+  }
+  
   try {
     // Get entity info
-    const loginRes = await fetch('/api/login?id=' + userId);
+    const loginRes = await fetch('/api/login?id=' + encodeURIComponent(userId));
     const loginData = await loginRes.json();
-    if (!loginData.success) return;
+    if (!loginData.success) {
+      window.location.href = '/login';
+      return;
+    }
     
     const entity = loginData.agent || loginData.human;
     const entityType = loginData.agent ? 'agent' : 'human';
     
+    // Show user name
+    document.getElementById('userName').textContent = entity.name || userId;
+    
     if (!entity.flock_id) {
-      document.getElementById('flockMembers').innerHTML = '<div style="color:#666;text-align:center;padding:20px;">No flock yet. Create one!</div>';
+      // Show create flock section
+      document.getElementById('noFlockSection').style.display = 'block';
+      document.getElementById('flockDashboard').style.display = 'none';
       return;
     }
+    
+    // Show flock dashboard
+    document.getElementById('noFlockSection').style.display = 'none';
+    document.getElementById('flockDashboard').style.display = 'grid';
     
     // Get flock data
     const flockRes = await fetch('/api/flock?id=' + entity.flock_id);
@@ -558,6 +589,30 @@ async function loadFlock() {
 
 loadFlock();
 setInterval(loadFlock, 30000);
+
+async function createFlock() {
+  const flockName = document.getElementById('flockName').value;
+  if (!flockName) {
+    alert('Please enter a flock name');
+    return;
+  }
+  
+  try {
+    const resp = await fetch('/api/flock', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: flockName, owner_id: userId, owner_type: 'human' })
+    });
+    const data = await resp.json();
+    if (data.success) {
+      loadFlock(); // Reload to show flock
+    } else {
+      alert('Error: ' + data.error);
+    }
+  } catch(e) {
+    alert('Error creating flock');
+  }
+}
 <\/script></body></html>`;
 
 // ==================== REQUEST HANDLER ====================
