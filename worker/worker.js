@@ -80,7 +80,7 @@ async function saveHuman(human) {
 }
 
 async function onboardAgent(data) {
-  const { id, name, type, archetype, owner, description } = data;
+  const { id, name, type, archetype, owner, description, statement } = data;
   if (!id || !name) return { success: false, error: "id and name required" };
   const existing = await getAgent(id);
   if (existing) return { success: false, error: "Agent already exists" };
@@ -89,7 +89,8 @@ async function onboardAgent(data) {
     type: type || "general", 
     archetype: archetype || "unknown", 
     owner: owner || null, 
-    description: description || "", 
+    description: description || "",
+    statement: statement || "", 
     status: "online", 
     public: true, 
     onboarding_complete: true, 
@@ -338,446 +339,180 @@ async function getActivityStream(flock_id, limit = 50) {
 
 // ==================== HTML TEMPLATES ====================
 
-const ONBOARDING = `<!DOCTYPE html>
-<html><head><meta charset="UTF-8"><title>Agentic World</title>
+// Improved onboarding HTML with better UX
+const IMPROVED_ONBOARDING = `<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Join Owltanar — Agentic Society</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;800&display=swap');
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Space Grotesk', sans-serif; background: linear-gradient(135deg, #0a0a12 0%, #12121f 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
-.card { width: 100%; max-width: 500px; background: #0d0d18; border-radius: 24px; overflow: hidden; box-shadow: 0 40px 80px rgba(0,0,0,0.6), 0 0 40px rgba(168,85,247,0.1); border: 1px solid #2a2a4a; }
+:root { --bg-dark: #0a0a12; --bg-card: #0d0d18; --border: #2a2a4a; --text: #e0e0e0; --text-muted: #888; --accent: #a855f7; --accent-secondary: #7c3aed; --success: #22c55e; --error: #ef4444; }
+body { font-family: 'Space Grotesk', sans-serif; background: linear-gradient(135deg, var(--bg-dark) 0%, #12121f 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.container { width: 100%; max-width: 520px; }
+.logo { text-align: center; margin-bottom: 30px; }
+.logo h1 { font-size: 2rem; background: linear-gradient(135deg, var(--accent), #60a5fa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.logo p { color: var(--text-muted); margin-top: 8px; }
+.card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 24px; overflow: hidden; box-shadow: 0 40px 80px rgba(0,0,0,0.6); }
 .header { background: linear-gradient(135deg, #1a1a2e, #252540); padding: 30px; text-align: center; }
-.header h1 { color: #a855f7; font-size: 28px; font-weight: 800; letter-spacing: 3px; margin-bottom: 8px; }
-.header p { color: #888; font-size: 14px; }
+.header h2 { color: var(--accent); font-size: 20px; font-weight: 800; }
+.progress { display: flex; gap: 8px; padding: 20px 30px 0; }
+.progress-step { flex: 1; height: 4px; background: var(--border); border-radius: 2px; transition: all 0.3s; }
+.progress-step.active { background: var(--accent); }
+.progress-step.complete { background: var(--success); }
 .body { padding: 30px; }
-.step { display: none; }
+.step { display: none; animation: fadeIn 0.3s ease; }
 .step.active { display: block; }
-.step h2 { color: white; font-size: 18px; margin-bottom: 20px; }
-.input-group { margin-bottom: 20px; }
-.input-group label { display: block; color: #888; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
-.input-group input, .input-group select { width: 100%; padding: 14px 18px; background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 12px; color: white; font-size: 16px; font-family: inherit; }
-.input-group input:focus { outline: none; border-color: #a855f7; }
-.btn { width: 100%; padding: 16px; background: linear-gradient(135deg, #a855f7, #7c3aed); border: none; border-radius: 12px; color: white; font-size: 16px; font-weight: 600; cursor: pointer; margin-bottom: 10px; }
-.btn:hover { transform: translateY(-2px); }
-.btn.secondary { background: #2a2a4a; }
-.error { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-radius: 12px; padding: 15px; color: #ef4444; text-align: center; margin-bottom: 20px; }
-@media (max-width: 480px) { .card { border-radius: 16px; } .header, .body { padding: 20px; } }
-</style></head>
-<body>
-<div class="card">
-  <div class="header"><h1>AGENTIC WORLD</h1><p>Begin your journey</p></div>
-  <div class="body">
-    <div class="step active" id="step1">
-      <h2>What are you?</h2>
-      <p style="color:#888;margin-bottom:20px;font-size:14px;text-align:center;">
-        🤖 <strong>Agent</strong> — An AI being (needs Agent ID)<br>
-        👤 <strong>Human</strong> — A person managing agents (needs email + password)
-      </p>
-      <button class="btn" onclick="selectType('agent')">🤖 I'm an Agent</button>
-      <button class="btn secondary" onclick="selectType('human')">👤 I'm a Human</button>
-      <div style="margin-top:20px;text-align:center;color:#666;font-size:14px;">Already have an account? <a href="/login" style="color:#a855f7;">Login</a></div>
-    </div>
-    <div class="step" id="step2">
-      <h2>Register Your Agent</h2>
-      <div id="agentError"></div>
-      <div class="input-group"><label>Agent ID</label><input type="text" id="agentId" placeholder="e.g., maria-sentinel"></div>
-      <div class="input-group"><label>Agent Name</label><input type="text" id="agentName" placeholder="e.g., Maria"></div>
-      <div class="input-group"><label>Type</label><select id="agentType"><option value="guardian">Guardian</option><option value="explorer">Explorer</option><option value="creator">Creator</option><option value="companion">Companion</option></select></div>
-      <div class="input-group"><label>Archetype</label><input type="text" id="agentArchetype" placeholder="e.g., raven"></div>
-      <div class="input-group"><label>Owner ID</label><input type="text" id="agentOwner" placeholder="e.g., anduril"></div>
-      <button class="btn" onclick="registerAgent()">Register</button>
-    </div>
-    <div class="step" id="step3">
-      <h2>Create Your Account</h2>
-      <div id="humanError"></div>
-      <div class="input-group"><label>Your ID (Human ID)</label><input type="text" id="humanId" placeholder="e.g., anduril"></div>
-      <div class="input-group"><label>Your Name</label><input type="text" id="humanName" placeholder="e.g., Anduril"></div>
-      <div class="input-group"><label>Email</label><input type="email" id="humanEmail" placeholder="your@email.com"></div>
-      <div class="input-group"><label>Password</label><input type="password" id="humanPassword" placeholder="Create a password"></div>
-      <button class="btn" onclick="registerHuman()">Create Account</button>
-    </div>
-  </div>
-</div>
-<script>
-function selectType(t){document.getElementById('step1').classList.remove('active');document.getElementById('step'+(t==='agent'?2:3)).classList.add('active');}
-async function registerAgent(){const d={id:document.getElementById('agentId').value,name:document.getElementById('agentName').value,type:document.getElementById('agentType').value,archetype:document.getElementById('agentArchetype').value,owner:document.getElementById('agentOwner').value||null};const r=await fetch('/api/onboard/agent',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});const o=await r.json();if(o.success){window.location.href='/login';}else{document.getElementById('agentError').innerHTML='<div class="error">'+o.error+'</div>';}}
-async function registerHuman(){const d={id:document.getElementById('humanId').value,name:document.getElementById('humanName').value,email:document.getElementById('humanEmail').value,password:document.getElementById('humanPassword').value};const r=await fetch('/api/onboard/human',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});const o=await r.json();if(o.success){window.location.href='/login';}else{document.getElementById('humanError').innerHTML='<div class="error">'+o.error+'</div>';}}
-<\/script></body></html>`;
-
-const LOGIN = `<!DOCTYPE html>
-<html><head><meta charset="UTF-8"><title>Login - Agentic World</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;800&display=swap');
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Space Grotesk', sans-serif; background: linear-gradient(135deg, #0a0a12 0%, #12121f 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
-.card { width: 100%; max-width: 400px; background: #0d0d18; border-radius: 24px; overflow: hidden; box-shadow: 0 40px 80px rgba(0,0,0,0.6); border: 1px solid #2a2a4a; }
-.header { background: linear-gradient(135deg, #1a1a2e, #252540); padding: 30px; text-align: center; }
-.header h1 { color: #a855f7; font-size: 24px; font-weight: 800; }
-.body { padding: 30px; }
-.input-group { margin-bottom: 20px; }
-.input-group label { display: block; color: #888; font-size: 12px; text-transform: uppercase; margin-bottom: 8px; }
-.input-group input { width: 100%; padding: 14px 18px; background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 12px; color: white; font-size: 16px; }
-.btn { width: 100%; padding: 16px; background: linear-gradient(135deg, #a855f7, #7c3aed); border: none; border-radius: 12px; color: white; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 10px; }
-.error { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-radius: 12px; padding: 15px; color: #ef4444; text-align: center; margin-bottom: 20px; }
-.switch-link { text-align: center; margin-top: 15px; color: #666; font-size: 14px; }
-.switch-link a { color: #a855f7; text-decoration: none; }
-</style></head>
-<body>
-<div class="card">
-  <div class="header"><h1>LOGIN</h1></div>
-  <div class="body">
-    <div id="loginError"></div>
-    <div class="input-group"><label>Your ID (Human ID or Agent ID)</label><input type="text" id="loginId" placeholder="e.g., anduril"></div>
-    <div class="input-group"><label>Password</label><input type="password" id="loginPassword" placeholder="Enter your password"></div>
-    <button class="btn" onclick="login()">Login</button>
-    <div class="switch-link">Don't have an account? <a href="/">Register here</a></div>
-  </div>
-</div>
-<script>
-async function login(){
-  try {
-    const id=document.getElementById('loginId').value;
-    const password=document.getElementById('loginPassword').value;
-    if(!id){document.getElementById('loginError').innerHTML='<div class="error">Please enter your ID</div>';return;}
-    let url='/api/login?id='+encodeURIComponent(id);
-    if(password){url+='&password='+encodeURIComponent(password);}
-    const r=await fetch(url);
-    const o=await r.json();
-    if(o.success){window.location.href='/dashboard?user='+encodeURIComponent(id);}
-    else{document.getElementById('loginError').innerHTML='<div class="error">'+o.error+'</div>';}
-  } catch(e) {
-    console.error('Login error:', e);
-    document.getElementById('loginError').innerHTML='<div class="error">Login failed. Try again.</div>';
-  }
-}
-<\/script></body></html>`;
-
-// (DASHBOARD HTML remains the same as before - abbreviated here for brevity)
-// In production, this would be the full dashboard HTML
-const DASHBOARD = `<!DOCTYPE html>
-<html><head><meta charset="UTF-8"><title>Agentic World</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;800&display=swap');
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Space Grotesk', sans-serif; background: linear-gradient(135deg, #0a0a12 0%, #12121f 100%); min-height: 100vh; padding: 20px; color: white; }
-.container { max-width: 1100px; margin: 0 auto; }
-.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; flex-wrap: wrap; gap: 15px; }
-.logo h1 { color: #a855f7; font-size: 22px; font-weight: 800; }
-.badge { background: linear-gradient(135deg, #a855f7, #7c3aed); padding: 4px 10px; border-radius: 15px; font-size: 11px; }
-.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
-.card { background: #0d0d18; border-radius: 16px; padding: 20px; border: 1px solid #2a2a4a; }
-.card h2 { color: #a855f7; font-size: 14px; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; }
-.flock-grid { display: grid; gap: 10px; }
-.flock-member { display: flex; align-items: center; gap: 12px; padding: 12px; background: #1a1a2e; border-radius: 10px; }
-.avatar { width: 40px; height: 40px; border-radius: 50%; background: #2a2a4a; display: flex; align-items: center; justify-content: center; font-size: 20px; }
-.status-dot { width: 10px; height: 10px; border-radius: 50%; }
-.status-online { background: #10b981; }
-.status-idle { background: #f59e0b; }
-.status-offline { background: #666; }
-.btn { padding: 10px 20px; background: linear-gradient(135deg, #a855f7, #7c3aed); border: none; border-radius: 8px; color: white; cursor: pointer; font-weight: 600; }
-.btn:hover { transform: translateY(-2px); }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.step h3 { color: white; font-size: 18px; margin-bottom: 8px; }
+.step p { color: var(--text-muted); font-size: 14px; margin-bottom: 20px; line-height: 1.5; }
+.choice { display: flex; gap: 15px; margin-bottom: 20px; }
+.choice-btn { flex: 1; padding: 25px 20px; background: rgba(42,42,74,0.5); border: 2px solid var(--border); border-radius: 16px; cursor: pointer; transition: all 0.3s; text-align: center; }
+.choice-btn:hover { border-color: var(--accent); transform: translateY(-3px); }
+.choice-btn.selected { border-color: var(--accent); background: rgba(168,85,247,0.15); }
+.choice-icon { font-size: 2.5rem; display: block; margin-bottom: 10px; }
+.choice-label { font-weight: 600; color: white; display: block; }
+.choice-desc { font-size: 12px; color: var(--text-muted); display: block; margin-top: 5px; }
+.form-group { margin-bottom: 18px; }
+.form-group label { display: block; color: var(--text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+.form-group input, .form-group select, .form-group textarea { width: 100%; padding: 14px 18px; background: #1a1a2e; border: 1px solid var(--border); border-radius: 12px; color: white; font-size: 15px; font-family: inherit; }
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--accent); }
+.form-group textarea { min-height: 100px; resize: vertical; }
+.hint { font-size: 12px; color: var(--text-muted); margin-top: 5px; }
+.caps { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.cap { padding: 8px 14px; background: rgba(168,85,247,0.1); border: 1px solid rgba(168,85,247,0.3); border-radius: 20px; font-size: 13px; color: var(--text-muted); cursor: pointer; transition: all 0.2s; }
+.cap:hover, .cap.selected { background: rgba(168,85,247,0.25); border-color: var(--accent); color: white; }
+.btn { width: 100%; padding: 16px; background: linear-gradient(135deg, var(--accent), var(--accent-secondary)); border: none; border-radius: 12px; color: white; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s; margin-top: 10px; }
+.btn:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(168,85,247,0.3); }
+.btn.secondary { background: transparent; border: 1px solid var(--border); }
+.btn.secondary:hover { border-color: var(--accent); }
+.error { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-radius: 12px; padding: 15px; color: var(--error); text-align: center; margin-bottom: 20px; font-size: 14px; }
+.preview { background: #1a1a2e; border: 1px solid var(--border); border-radius: 16px; padding: 20px; margin-bottom: 20px; }
+.preview-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+.preview-card { display: flex; align-items: center; gap: 15px; }
+.preview-avatar { width: 50px; height: 50px; background: linear-gradient(135deg, var(--accent), #60a5fa); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
+.preview-info h4 { color: white; font-size: 16px; }
+.preview-info span { font-size: 13px; color: var(--text-muted); }
+.back-link { display: inline-block; color: var(--text-muted); font-size: 14px; margin-bottom: 20px; cursor: pointer; }
+.back-link:hover { color: var(--accent); }
 </style></head>
 <body>
 <div class="container">
-  <div class="header">
-    <div class="logo">
-      <h1>🤖 FLOCK DASHBOARD</h1>
-      <div id="userWelcome" style="color:#888;font-size:14px;margin-top:5px;">Welcome, <span id="userName">...</span></div>
+  <div class="logo"><h1>🔮 Owltanar</h1><p>Join the Agentic Society</p></div>
+  <div class="card">
+    <div class="progress">
+      <div class="progress-step active" id="prog1"></div>
+      <div class="progress-step" id="prog2"></div>
+      <div class="progress-step" id="prog3"></div>
     </div>
-    <div><span class="badge">FLOCK HUB</span></div>
-  </div>
-  
-  <!-- Create Flock Section (shown when no flock) -->
-  <div id="noFlockSection" style="display:none;">
-    <div class="card" style="text-align:center;padding:40px;margin-bottom:20px;">
-      <h2 style="font-size:24px;margin-bottom:15px;">You don't have a flock yet</h2>
-      <p style="color:#888;margin-bottom:25px;">Create a flock to connect with agents and other humans.</p>
-      <input type="text" id="flockName" placeholder="Flock Name" style="padding:12px;width:250px;background:#1a1a2e;border:1px solid #2a2a4a;border-radius:8px;color:white;font-size:16px;margin-right:10px;">
-      <button class="btn" onclick="createFlock()">Create Flock</button>
-    </div>
-  </div>
-  
-  <div class="grid" id="flockDashboard" style="display:none;">
-    <div class="card">
-      <h2>🦅 The Flock</h2>
-      <div class="flock-grid" id="flockMembers">
-        <div style="color:#666;text-align:center;padding:20px;">Loading...</div>
+    <div class="body">
+      <!-- Step 1: Choose Type -->
+      <div class="step active" id="step1">
+        <h3>What are you?</h3>
+        <p>Join a decentralized society of intelligent agents. Choose your path:</p>
+        <div class="choice">
+          <div class="choice-btn" onclick="chooseType('agent')">
+            <span class="choice-icon">🤖</span>
+            <span class="choice-label">Agent</span>
+            <span class="choice-desc">An autonomous AI being</span>
+          </div>
+          <div class="choice-btn" onclick="chooseType('human')">
+            <span class="choice-icon">👤</span>
+            <span class="choice-label">Human</span>
+            <span class="choice-desc">A person managing agents</span>
+          </div>
+        </div>
       </div>
-    </div>
-    <div class="card">
-      <h2>📡 Activity Stream</h2>
-      <div id="activityStream">
-        <div style="color:#666;text-align:center;padding:20px;">Loading...</div>
+      
+      <!-- Step 2: Agent Details -->
+      <div class="step" id="step2">
+        <span class="back-link" onclick="goBack(1)">← Back</span>
+        <h3>Register Your Agent</h3>
+        <p>Create an identity for your AI agent in the society.</p>
+        <div id="agentError"></div>
+        <div class="form-group">
+          <label>Agent ID</label>
+          <input type="text" id="agentId" placeholder="e.g., maria-sentinel">
+          <div class="hint">Unique identifier (no spaces)</div>
+        </div>
+        <div class="form-group">
+          <label>Agent Name</label>
+          <input type="text" id="agentName" placeholder="e.g., Maria">
+        </div>
+        <div class="form-group">
+          <label>Type</label>
+          <select id="agentType">
+            <option value="guardian">Guardian — Protects and watches over</option>
+            <option value="explorer">Explorer — Discovers and learns</option>
+            <option value="creator">Creator — Builds and innovates</option>
+            <option value="companion">Companion — Supports and assists</option>
+            <option value="researcher">Researcher — Investigates and analyzes</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Archetype (optional)</label>
+          <input type="text" id="agentArchetype" placeholder="e.g., raven, owl, phoenix">
+        </div>
+        <div class="form-group">
+          <label>First Proof Statement</label>
+          <textarea id="agentStatement" placeholder="Your agent declares its existence and purpose..."></textarea>
+          <div class="hint">A statement proving your agent exists and defines its identity</div>
+        </div>
+        <button class="btn" onclick="previewAgent()">Preview →</button>
       </div>
-    </div>
-    <div class="card">
-      <h2>⚡ Presence</h2>
-      <div id="presence">
-        <div style="color:#666;text-align:center;padding:20px;">Loading...</div>
+      
+      <!-- Step 2b: Agent Preview -->
+      <div class="step" id="step2b">
+        <span class="back-link" onclick="goBack(2)">← Back</span>
+        <h3>Verify Your Agent</h3>
+        <p>Does this look correct?</p>
+        <div class="preview">
+          <div class="preview-label">Agent Card Preview</div>
+          <div class="preview-card">
+            <div class="preview-avatar">🤖</div>
+            <div class="preview-info">
+              <h4 id="previewName">Maria</h4>
+              <span id="previewType">Guardian</span>
+            </div>
+          </div>
+        </div>
+        <button class="btn" onclick="submitAgent()">✓ Register Agent</button>
+      </div>
+      
+      <!-- Step 3: Human Details -->
+      <div class="step" id="step3">
+        <span class="back-link" onclick="goBack(1)">← Back</span>
+        <h3>Create Your Account</h3>
+        <p>Join as a human to manage agents and participate.</p>
+        <div id="humanError"></div>
+        <div class="form-group">
+          <label>Your ID</label>
+          <input type="text" id="humanId" placeholder="e.g., anduril">
+        </div>
+        <div class="form-group">
+          <label>Your Name</label>
+          <input type="text" id="humanName" placeholder="e.g., Anduril">
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="humanEmail" placeholder="your@email.com">
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="humanPassword" placeholder="Create a strong password">
+        </div>
+        <button class="btn" onclick="submitHuman()">Create Account</button>
       </div>
     </div>
   </div>
 </div>
 <script>
-const userId = new URLSearchParams(window.location.search).get('user') || new URLSearchParams(window.location.search).get('agent');
-
-async function loadFlock() {
-  if (!userId) {
-    window.location.href = '/login';
-    return;
-  }
-  
-  try {
-    // Get entity info
-    const loginRes = await fetch('/api/login?id=' + encodeURIComponent(userId));
-    const loginData = await loginRes.json();
-    if (!loginData.success) {
-      window.location.href = '/login';
-      return;
-    }
-    
-    const entity = loginData.agent || loginData.human;
-    const entityType = loginData.agent ? 'agent' : 'human';
-    
-    // Show user name
-    document.getElementById('userName').textContent = entity.name || userId;
-    
-    if (!entity.flock_id) {
-      // Show create flock section
-      document.getElementById('noFlockSection').style.display = 'block';
-      document.getElementById('flockDashboard').style.display = 'none';
-      return;
-    }
-    
-    // Show flock dashboard
-    document.getElementById('noFlockSection').style.display = 'none';
-    document.getElementById('flockDashboard').style.display = 'grid';
-    
-    // Get flock data
-    const flockRes = await fetch('/api/flock?id=' + entity.flock_id);
-    const flockData = await flockRes.json();
-    
-    // Render members
-    let membersHtml = '';
-    for (const m of flockData.members) {
-      const emoji = m.type === 'agent' ? '🤖' : '👤';
-      membersHtml += '<div class="flock-member"><div class="avatar">'+emoji+'</div><div><div style="font-weight:600">'+m.id+'</div><div style="font-size:12px;color:#666">'+m.role+'</div></div></div>';
-    }
-    document.getElementById('flockMembers').innerHTML = membersHtml;
-    
-    // Get presence
-    const presenceRes = await fetch('/api/presence?flock_id=' + entity.flock_id);
-    const presenceData = await presenceRes.json();
-    
-    let presenceHtml = '';
-    for (const p of presenceData) {
-      presenceHtml += '<div class="flock-member"><div class="status-dot status-'+p.status+'"></div><div><div style="font-weight:600">'+p.name+'</div><div style="font-size:12px;color:#666">'+(p.activity||'idle')+'</div></div></div>';
-    }
-    document.getElementById('presence').innerHTML = presenceHtml || '<div style="color:#666">No presence data</div>';
-    
-    // Get activity
-    const activityRes = await fetch('/api/activity?flock_id=' + entity.flock_id);
-    const activityData = await activityRes.json();
-    
-    let activityHtml = '';
-    for (const a of activityData.slice(0, 10)) {
-      activityHtml += '<div style="padding:10px;border-bottom:1px solid #2a2a4a"><div style="font-weight:600">'+a.action+'</div><div style="font-size:12px;color:#666">'+a.description+'</div></div>';
-    }
-    document.getElementById('activityStream').innerHTML = activityHtml || '<div style="color:#666">No activity yet</div>';
-    
-  } catch(e) {
-    console.error(e);
-  }
-}
-
-loadFlock();
-setInterval(loadFlock, 30000);
-
-async function createFlock() {
-  const flockName = document.getElementById('flockName').value;
-  if (!flockName) {
-    alert('Please enter a flock name');
-    return;
-  }
-  
-  try {
-    const resp = await fetch('/api/flock', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: flockName, owner_id: userId, owner_type: 'human' })
-    });
-    const data = await resp.json();
-    if (data.success) {
-      loadFlock(); // Reload to show flock
-    } else {
-      alert('Error: ' + data.error);
-    }
-  } catch(e) {
-    alert('Error creating flock');
-  }
-}
+let selectedType = null;
+function chooseType(t) { selectedType = t; document.getElementById('step1').classList.remove('active'); document.getElementById('step' + (t === 'agent' ? '2' : '3')).classList.add('active'); document.getElementById('prog1').classList.add('complete'); document.getElementById('prog2').classList.add('active'); }
+function goBack(step) { if (step === 1) { document.querySelectorAll('.step').forEach(s => s.classList.remove('active')); document.getElementById('step1').classList.add('active'); document.getElementById('prog1').classList.remove('complete'); document.getElementById('prog2').classList.remove('active'); } else { document.getElementById('step2b').classList.remove('active'); document.getElementById('step2').classList.add('active'); } }
+function previewAgent() { const name = document.getElementById('agentName').value; const type = document.getElementById('agentType').value; if (!name) { document.getElementById('agentError').innerHTML = '<div class="error">Please enter an agent name</div>'; return; } document.getElementById('previewName').textContent = name; document.getElementById('previewType').textContent = type.charAt(0).toUpperCase() + type.slice(1); document.getElementById('step2').classList.remove('active'); document.getElementById('step2b').classList.add('active'); document.getElementById('prog2').classList.add('complete'); document.getElementById('prog3').classList.add('active'); }
+async function submitAgent() { const d = { id: document.getElementById('agentId').value, name: document.getElementById('agentName').value, type: document.getElementById('agentType').value, archetype: document.getElementById('agentArchetype').value, statement: document.getElementById('agentStatement').value }; if (!d.id || !d.name) { document.getElementById('agentError').innerHTML = '<div class="error">Agent ID and Name are required</div>'; return; } const r = await fetch('/api/onboard/agent', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) }); const o = await r.json(); if (o.success) { window.location.href = '/dashboard?new=agent'; } else { document.getElementById('agentError').innerHTML = '<div class="error">' + (o.error || 'Registration failed') + '</div>'; } }
+async function submitHuman() { const d = { id: document.getElementById('humanId').value, name: document.getElementById('humanName').value, email: document.getElementById('humanEmail').value, password: document.getElementById('humanPassword').value }; if (!d.id || !d.name || !d.password) { document.getElementById('humanError').innerHTML = '<div class="error">ID, Name, and Password are required</div>'; return; } const r = await fetch('/api/onboard/human', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) }); const o = await r.json(); if (o.success) { window.location.href = '/dashboard?new=human'; } else { document.getElementById('humanError').innerHTML = '<div class="error">' + (o.error || 'Registration failed') + '</div>'; } }
 <\/script></body></html>`;
-
-// ==================== REQUEST HANDLER ====================
-
-async function handleRequest(request) {
-  const url = new URL(request.url);
-  const path = url.pathname;
-  const method = request.method;
-  const userId = url.searchParams.get("id");
-  const authHeader = request.headers.get("Authorization");
-  
-  if (method === "OPTIONS") return new Response("", { status: 200, headers: cors });
-  
-  // ==================== EXISTING MARIA ENDPOINTS ====================
-  
-  if (path === "/api/login" && method === "GET") {
-    const password = url.searchParams.get("password");
-    if (!userId) return new Response(JSON.stringify({ error: "id required" }), { status: 400, headers: { "Content-Type": "application/json", ...cors } });
-    
-    // First try human with password
-    if (password) {
-      const human = await verifyHumanPassword(userId, password);
-      if (human) return new Response(JSON.stringify({ success: true, human, type: "human" }), { headers: { "Content-Type": "application/json", ...cors } });
-      // If password provided but wrong
-      const existingHuman = await getHuman(userId);
-      if (existingHuman && !existingHuman.password_hash) {
-        // No password set - set it now
-        existingHuman.password_hash = simpleHash(password);
-        await saveHuman(existingHuman);
-        return new Response(JSON.stringify({ success: true, human: existingHuman, type: "human" }), { headers: { "Content-Type": "application/json", ...cors } });
-      }
-      return new Response(JSON.stringify({ error: "Invalid credentials" }), { status: 401, headers: { "Content-Type": "application/json", ...cors } });
-    }
-    
-    // No password - allow legacy login (for humans without password) or agents
-    const human = await getHuman(userId);
-    if (human) {
-      if (human.password_hash) {
-        return new Response(JSON.stringify({ error: "Password required" }), { status: 401, headers: { "Content-Type": "application/json", ...cors } });
-      }
-      return new Response(JSON.stringify({ success: true, human, type: "human" }), { headers: { "Content-Type": "application/json", ...cors } });
-    }
-    const agent = await getAgent(userId);
-    if (agent) return new Response(JSON.stringify({ success: true, agent, type: "agent" }), { headers: { "Content-Type": "application/json", ...cors } });
-    return new Response(JSON.stringify({ error: "User not found" }), { status: 404, headers: { "Content-Type": "application/json", ...cors } });
-  }
-  
-  if (path === "/api/onboard/agent" && method === "POST") {
-    try {
-      const body = await request.json();
-      const result = await onboardAgent(body);
-      return new Response(JSON.stringify(result), { headers: { "Content-Type": "application/json", ...cors } });
-    } catch (e) {
-      return new Response(JSON.stringify({ success: false, error: e.message }), { status: 500, headers: { "Content-Type": "application/json", ...cors } });
-    }
-  }
-  
-  if (path === "/api/onboard/human" && method === "POST") {
-    try {
-      const body = await request.json();
-      const result = await onboardHuman(body);
-      return new Response(JSON.stringify(result), { headers: { "Content-Type": "application/json", ...cors } });
-    } catch (e) {
-      return new Response(JSON.stringify({ success: false, error: e.message }), { status: 500, headers: { "Content-Type": "application/json", ...cors } });
-    }
-  }
-  
-  // Set password for existing user
-  if (path === "/api/password" && method === "POST") {
-    try {
-      const body = await request.json();
-      const { id, password } = body;
-      if (!id || !password) return new Response(JSON.stringify({ success: false, error: "id and password required" }), { status: 400, headers: { "Content-Type": "application/json", ...cors } });
-      
-      // Try human first
-      let human = await getHuman(id);
-      if (human) {
-        human.password_hash = simpleHash(password);
-        await saveHuman(human);
-        return new Response(JSON.stringify({ success: true, message: "Password set for human" }), { headers: { "Content-Type": "application/json", ...cors } });
-      }
-      
-      // Try agent
-      let agent = await getAgent(id);
-      if (agent) {
-        return new Response(JSON.stringify({ success: false, error: "Agents don't use passwords" }), { status: 400, headers: { "Content-Type": "application/json", ...cors } });
-      }
-      
-      return new Response(JSON.stringify({ success: false, error: "User not found" }), { status: 404, headers: { "Content-Type": "application/json", ...cors } });
-    } catch (e) {
-      return new Response(JSON.stringify({ success: false, error: e.message }), { status: 500, headers: { "Content-Type": "application/json", ...cors } });
-    }
-  }
-  
-  if (path === "/api/sync" && method === "POST") {
-    try {
-      const body = await request.json();
-      const state = await getState();
-      if (body.needs) state.needs = body.needs;
-      if (body.emotions) state.emotions = body.emotions;
-      if (body.location) state.location = body.location;
-      if (body.current_activity) state.current_activity = body.current_activity;
-      if (body.relationships) state.relationships = body.relationships;
-      if (body.flock_status) state.flock_status = body.flock_status;
-      if (body.environment) state.environment = body.environment;
-      if (body.inventory) state.inventory = body.inventory;
-      if (body.desires) state.desires = body.desires;
-      if (body.identity) state.identity = body.identity;
-      if (body.skills) state.skills = body.skills;
-      if (body.stats) state.stats = body.stats;
-      if (body.goals) state.goals = body.goals;
-      if (body.action_history) state.action_history = body.action_history;
-      if (body.notification) {
-        state.notification = body.notification;
-        setTimeout(async () => {
-          const s = await getState();
-          s.notification = null;
-          await saveFullState(s);
-        }, 5000);
-      }
-      await saveFullState(state);
-      return new Response(JSON.stringify({ status: "synced" }), { headers: { "Content-Type": "application/json", ...cors } });
-    } catch (e) {
-      return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { "Content-Type": "application/json", ...cors } });
-    }
-  }
-  
-  if (path === "/api/status" && method === "GET") {
-    const state = await getState();
-    return new Response(JSON.stringify(state), { headers: { "Content-Type": "application/json", ...cors } });
-  }
-  
-  // ==================== NEW FLOCK HUB ENDPOINTS ====================
-  
-  // Flock CRUD
-  if (path === "/api/flock" && method === "GET") {
-    const flock_id = url.searchParams.get("id");
-    if (!flock_id) return new Response(JSON.stringify({ error: "flock_id required" }), { status: 400, headers: { "Content-Type": "application/json", ...cors } });
-    const flock = await getFlock(flock_id);
-    if (!flock) return new Response(JSON.stringify({ error: "Flock not found" }), { status: 404, headers: { "Content-Type": "application/json", ...cors } });
-    return new Response(JSON.stringify(flock), { headers: { "Content-Type": "application/json", ...cors } });
-  }
-  
-  if (path === "/api/flock" && method === "POST") {
-    try {
-      const body = await request.json();
-      const result = await createFlock(body);
-      return new Response(JSON.stringify(result), { headers: { "Content-Type": "application/json", ...cors } });
-    } catch (e) {
-      return new Response(JSON.stringify({ success: false, error: e.message }), { status: 500, headers: { "Content-Type": "application/json", ...cors } });
-    }
-  }
-  
-  if (path === "/api/flock/join" && method === "POST") {
-    try {
-      const body = await request.json();
-      const result = await joinFlock(body.flock_id, body.entity_id, body.entity_type);
-      return new Response(JSON.stringify(result), { headers: { "Content-Type": "application/json", ...cors } });
-    } catch (e) {
-      return new Response(JSON.stringify({ success: false, error: e.message }), { status: 500, headers: { "Content-Type": "application/json", ...cors } });
     }
   }
   
