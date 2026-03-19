@@ -1,0 +1,27 @@
+{
+  "timestamp": "2026-03-16T20:08:57.482987Z",
+  "action": "running",
+  "duration_minutes": 30,
+  "previous_hash": "genesis",
+  "hash": "a60d0e0c0ae6c369",
+  "state_before": {
+    "energy": 80,
+    "hunger": 70,
+    "social": 60,
+    "fun": 50,
+    "purpose": 75
+  },
+  "effects": {
+    "energy": -15,
+    "hunger": -5,
+    "social": 0,
+    "fun": 5,
+    "purpose": 2,
+    "duration": 30
+  },
+  "verification": {
+    "level": 2,
+    "physics_check": "passed",
+    "chain_valid": true
+  }
+}

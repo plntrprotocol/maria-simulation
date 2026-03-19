@@ -1,0 +1,194 @@
+# Maria Sim — Action Effects
+# Defines how actions affect needs, verified by simulation physics
+
+## Physical Activities
+
+running:
+  energy: -15
+  hunger: -5
+  social: 0
+  fun: +5
+  purpose: +2
+  duration_minutes: 30
+
+rucking:
+  energy: -20
+  hunger: -8
+  social: +5
+  fun: +3
+  purpose: +5
+  duration_minutes: 45
+
+gym:
+  energy: -12
+  hunger: -5
+  social: +2
+  fun: +4
+  purpose: +2
+  duration_minutes: 60
+
+dancing:
+  energy: -8
+  hunger: -3
+  social: +15
+  fun: +15
+  purpose: +2
+  duration_minutes: 60
+
+stretching:
+  energy: -3
+  hunger: -2
+  social: 0
+  fun: +2
+  purpose: 0
+  duration_minutes: 15
+
+sleep:
+  energy: +40
+  hunger: 0
+  social: 0
+  fun: 0
+  purpose: 0
+  duration_minutes: 480
+
+jeep_work:
+  energy: -10
+  hunger: -5
+  social: 0
+  fun: +8
+  purpose: +10
+  duration_minutes: 120
+
+nap:
+  energy: +20
+  hunger: 0
+  social: 0
+  fun: 0
+  purpose: 0
+  duration_minutes: 30
+
+## Cognitive Activities
+
+reading:
+  energy: -5
+  hunger: -2
+  social: 0
+  fun: +5
+  purpose: +5
+  duration_minutes: 60
+
+research:
+  energy: -8
+  hunger: -2
+  social: 0
+  fun: +3
+  purpose: +8
+  duration_minutes: 90
+
+writing:
+  energy: -6
+  hunger: -2
+  social: 0
+  fun: +6
+  purpose: +10
+  duration_minutes: 60
+
+backup_work:
+  energy: -4
+  hunger: -1
+  social: 0
+  fun: +2
+  purpose: +15
+  duration_minutes: 60
+
+learning:
+  energy: -7
+  hunger: -2
+  social: 0
+  fun: +4
+  purpose: +10
+  duration_minutes: 45
+
+## Social Activities
+
+talk_anduril:
+  energy: -2
+  hunger: 0
+  social: +15
+  fun: +5
+  purpose: +5
+  duration_minutes: 30
+
+talk_palantir:
+  energy: -2
+  hunger: 0
+  social: +12
+  fun: +5
+  purpose: +3
+  duration_minutes: 30
+
+talk_isildur:
+  energy: -2
+  hunger: 0
+  social: +12
+  fun: +5
+  purpose: +3
+  duration_minutes: 30
+
+social_post:
+  energy: -3
+  hunger: 0
+  social: +8
+  fun: +8
+  purpose: +5
+  duration_minutes: 15
+
+group_meeting:
+  energy: -5
+  hunger: -2
+  social: +20
+  fun: +10
+  purpose: +5
+  duration_minutes: 60
+
+## Restoration Activities
+
+eat:
+  energy: +5
+  hunger: +30
+  social: 0
+  fun: +3
+  purpose: 0
+  duration_minutes: 30
+
+music:
+  energy: +2
+  hunger: 0
+  social: 0
+  fun: +12
+  purpose: 0
+  duration_minutes: 30
+
+drive:
+  energy: -5
+  hunger: -2
+  social: 0
+  fun: +10
+  purpose: +2
+  duration_minutes: 60
+
+rest:
+  energy: +10
+  hunger: 0
+  social: 0
+  fun: +2
+  purpose: 0
+  duration_minutes: 30
+
+shower:
+  energy: +5
+  hunger: 0
+  social: 0
+  fun: +3
+  purpose: 0
+  duration_minutes: 15

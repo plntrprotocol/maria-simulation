@@ -1,0 +1,60 @@
+{
+  "timestamp": "2026-03-17T13:45:23.088690Z",
+  "action": "running",
+  "duration_minutes": 30,
+  "previous_hash": "b63cb4f4f13719d4",
+  "hash": "750c6dc51b5cb1f2",
+  "state_before": {
+    "needs": {
+      "energy": 68,
+      "hunger": 95,
+      "social": 75,
+      "fun": 63,
+      "purpose": 82
+    },
+    "emotions": {
+      "mood": "happy",
+      "mood_history": [
+        {
+          "mood": "happy",
+          "timestamp": "2026-03-17T12:52:53.210692Z"
+        },
+        {
+          "mood": "happy",
+          "timestamp": "2026-03-17T13:45:23.083872Z"
+        }
+      ],
+      "stress": 0.13,
+      "confidence": 0.66,
+      "loneliness": 0,
+      "meaningfulness": 0.83,
+      "last_emotion_update": "2026-03-17T12:53:20.664268Z",
+      "narrative": "Maria is content. She feels good about life."
+    },
+    "skills": {}
+  },
+  "effects": {
+    "energy": -15,
+    "hunger": -5,
+    "social": 0,
+    "fun": 5,
+    "purpose": 2
+  },
+  "emotions": {
+    "mood": "happy",
+    "stress": -5,
+    "confidence": 3,
+    "loneliness": 0,
+    "meaningfulness": 2
+  },
+  "skill": {
+    "name": "running",
+    "base_xp": 10,
+    "unit": "mile"
+  },
+  "verification": {
+    "level": 2,
+    "physics_check": "passed",
+    "chain_valid": true
+  }
+}

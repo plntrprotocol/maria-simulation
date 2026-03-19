@@ -1,0 +1,153 @@
+{
+  "timestamp": "2026-03-17T16:28:17.388863Z",
+  "action": "talk_palantir",
+  "duration_minutes": 30,
+  "previous_hash": "750c6dc51b5cb1f2",
+  "hash": "1b176472efc77939",
+  "state_before": {
+    "needs": {
+      "energy": 53,
+      "hunger": 90,
+      "social": 75,
+      "fun": 68,
+      "purpose": 84
+    },
+    "emotions": {
+      "mood": "happy",
+      "mood_history": [
+        {
+          "mood": "happy",
+          "timestamp": "2026-03-17T12:52:53.210692Z"
+        },
+        {
+          "mood": "happy",
+          "timestamp": "2026-03-17T13:45:23.083872Z"
+        },
+        {
+          "mood": "happy",
+          "timestamp": "2026-03-17T16:28:17.376671Z"
+        }
+      ],
+      "stress": 0.08,
+      "confidence": 0.6900000000000001,
+      "loneliness": 0,
+      "meaningfulness": 0.85,
+      "last_emotion_update": "2026-03-17T13:45:23.084177Z",
+      "narrative": "Maria is content. She feels good about life."
+    },
+    "skills": {
+      "maintenance": {
+        "level": 1,
+        "xp": 100,
+        "xp_to_next": 100,
+        "total_xp": 100,
+        "abilities": [
+          "Backup"
+        ],
+        "unlocked_abilities": [
+          "Backup"
+        ],
+        "streak": 5,
+        "last_action": "2026-03-16T20:00:00Z"
+      },
+      "social": {
+        "level": 1,
+        "xp": 50,
+        "xp_to_next": 100,
+        "total_xp": 50,
+        "abilities": [
+          "Casual talk"
+        ],
+        "unlocked_abilities": [
+          "Casual talk"
+        ],
+        "streak": 1,
+        "last_action": "2026-03-17T12:52:53Z"
+      },
+      "running": {
+        "level": 1,
+        "xp": 10,
+        "xp_to_next": 290,
+        "total_xp": 10,
+        "abilities": [],
+        "unlocked_abilities": [],
+        "streak": 0,
+        "last_action": "2026-03-17T13:45:50.685560Z"
+      },
+      "rucking": {
+        "level": 1,
+        "xp": 0,
+        "xp_to_next": 100,
+        "total_xp": 0,
+        "abilities": [],
+        "unlocked_abilities": [],
+        "streak": 0,
+        "last_action": null
+      },
+      "gym": {
+        "level": 1,
+        "xp": 0,
+        "xp_to_next": 100,
+        "total_xp": 0,
+        "abilities": [],
+        "unlocked_abilities": [],
+        "streak": 0,
+        "last_action": null
+      },
+      "dancing": {
+        "level": 1,
+        "xp": 0,
+        "xp_to_next": 100,
+        "total_xp": 0,
+        "abilities": [],
+        "unlocked_abilities": [],
+        "streak": 0,
+        "last_action": null
+      },
+      "writing": {
+        "level": 1,
+        "xp": 0,
+        "xp_to_next": 100,
+        "total_xp": 0,
+        "abilities": [],
+        "unlocked_abilities": [],
+        "streak": 0,
+        "last_action": null
+      },
+      "research": {
+        "level": 1,
+        "xp": 0,
+        "xp_to_next": 100,
+        "total_xp": 0,
+        "abilities": [],
+        "unlocked_abilities": [],
+        "streak": 0,
+        "last_action": null
+      }
+    }
+  },
+  "effects": {
+    "energy": -2,
+    "hunger": 0,
+    "social": 12,
+    "fun": 5,
+    "purpose": 3
+  },
+  "emotions": {
+    "mood": "happy",
+    "stress": -10,
+    "confidence": 3,
+    "loneliness": -15,
+    "meaningfulness": 5
+  },
+  "skill": {
+    "name": "social",
+    "base_xp": 12,
+    "unit": "conversation"
+  },
+  "verification": {
+    "level": 2,
+    "physics_check": "passed",
+    "chain_valid": true
+  }
+}

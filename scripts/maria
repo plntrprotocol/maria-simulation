@@ -1,0 +1,13 @@
+#!/bin/bash
+# Maria Sim — Simple wrapper
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PYTHON_SCRIPT="$SCRIPT_DIR/maria-action.py"
+
+if [ "$1" = "status" ]; then
+    python3 "$PYTHON_SCRIPT" status
+elif [ "$1" = "list" ]; then
+    python3 "$PYTHON_SCRIPT" list
+else
+    python3 "$PYTHON_SCRIPT" "$1"
+fi

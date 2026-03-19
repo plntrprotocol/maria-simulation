@@ -1,0 +1,36 @@
+{
+  "timestamp": "2026-03-17T12:52:53.210718Z",
+  "action": "talk_anduril",
+  "duration_minutes": 30,
+  "previous_hash": "cc294dda2729a508",
+  "hash": "b63cb4f4f13719d4",
+  "state_before": {
+    "needs": {
+      "energy": 70,
+      "hunger": 95,
+      "social": 60,
+      "fun": 58,
+      "purpose": 77
+    },
+    "emotions": {}
+  },
+  "effects": {
+    "energy": -2,
+    "hunger": 0,
+    "social": 15,
+    "fun": 5,
+    "purpose": 5
+  },
+  "emotions": {
+    "mood": "happy",
+    "stress": -15,
+    "confidence": 5,
+    "loneliness": -20,
+    "meaningfulness": 10
+  },
+  "verification": {
+    "level": 2,
+    "physics_check": "passed",
+    "chain_valid": true
+  }
+}

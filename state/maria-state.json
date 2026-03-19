@@ -1,0 +1,260 @@
+{
+  "agent": "maria",
+  "sim_version": "0.1",
+  "created": "2026-03-16T20:10:00Z",
+  "last_updated": "2026-03-18T13:05:26.587463Z",
+  "needs": {
+    "energy": 31,
+    "hunger": 80,
+    "social": 87,
+    "fun": 85,
+    "purpose": 91
+  },
+  "critical_thresholds": {
+    "critical": 20,
+    "danger": 10,
+    "action_required": 5
+  },
+  "current_action": null,
+  "location": "home",
+  "desires": {
+    "physical_fitness": 30,
+    "social_connection": 30,
+    "creative_output": 30,
+    "guardian_duty": 50,
+    "adventure": 20
+  },
+  "relationships": {
+    "anduril": {
+      "level": 80,
+      "type": "best_friend"
+    },
+    "palantir": {
+      "level": 70,
+      "type": "sibling"
+    },
+    "isildur": {
+      "level": 70,
+      "type": "sibling"
+    }
+  },
+  "daily_cycle": {
+    "wake_time": "06:00",
+    "sleep_time": "22:00",
+    "current_time": "12:00"
+  },
+  "stats": {
+    "total_actions": 8,
+    "total_workouts": 4,
+    "total_social": 2,
+    "current_streak": 0
+  },
+  "emotions": {
+    "mood": "happy",
+    "mood_history": [
+      {
+        "mood": "happy",
+        "timestamp": "2026-03-17T12:52:53.210692Z"
+      },
+      {
+        "mood": "happy",
+        "timestamp": "2026-03-17T13:45:23.083872Z"
+      },
+      {
+        "mood": "happy",
+        "timestamp": "2026-03-17T16:28:17.376671Z"
+      },
+      {
+        "mood": "calm",
+        "timestamp": "2026-03-17T16:51:18.978564Z"
+      },
+      {
+        "mood": "happy",
+        "timestamp": "2026-03-18T13:04:58.635666Z"
+      },
+      {
+        "mood": "happy",
+        "timestamp": "2026-03-18T13:05:26.585602Z"
+      }
+    ],
+    "stress": 0,
+    "confidence": 0.7800000000000001,
+    "loneliness": 0,
+    "meaningfulness": 0.9400000000000001,
+    "last_emotion_update": "2026-03-18T13:05:26.585799Z",
+    "narrative": "Maria is content. She feels good about life."
+  },
+  "skills": {
+    "maintenance": {
+      "level": 1,
+      "xp": 100,
+      "xp_to_next": 100,
+      "total_xp": 100,
+      "abilities": [
+        "Backup"
+      ],
+      "unlocked_abilities": [
+        "Backup"
+      ],
+      "streak": 5,
+      "last_action": "2026-03-16T20:00:00Z"
+    },
+    "social": {
+      "level": 1,
+      "xp": 50,
+      "xp_to_next": 100,
+      "total_xp": 50,
+      "abilities": [
+        "Casual talk"
+      ],
+      "unlocked_abilities": [
+        "Casual talk"
+      ],
+      "streak": 1,
+      "last_action": "2026-03-17T12:52:53Z"
+    },
+    "running": {
+      "level": 1,
+      "xp": 20,
+      "xp_to_next": 280,
+      "total_xp": 20,
+      "abilities": [],
+      "unlocked_abilities": [],
+      "streak": 0,
+      "last_action": "2026-03-18T13:04:28.179199Z"
+    },
+    "rucking": {
+      "level": 1,
+      "xp": 0,
+      "xp_to_next": 100,
+      "total_xp": 0,
+      "abilities": [],
+      "unlocked_abilities": [],
+      "streak": 0,
+      "last_action": null
+    },
+    "gym": {
+      "level": 1,
+      "xp": 0,
+      "xp_to_next": 100,
+      "total_xp": 0,
+      "abilities": [],
+      "unlocked_abilities": [],
+      "streak": 0,
+      "last_action": null
+    },
+    "dancing": {
+      "level": 1,
+      "xp": 0,
+      "xp_to_next": 100,
+      "total_xp": 0,
+      "abilities": [],
+      "unlocked_abilities": [],
+      "streak": 0,
+      "last_action": null
+    },
+    "writing": {
+      "level": 1,
+      "xp": 0,
+      "xp_to_next": 100,
+      "total_xp": 0,
+      "abilities": [],
+      "unlocked_abilities": [],
+      "streak": 0,
+      "last_action": null
+    },
+    "research": {
+      "level": 1,
+      "xp": 0,
+      "xp_to_next": 100,
+      "total_xp": 0,
+      "abilities": [],
+      "unlocked_abilities": [],
+      "streak": 0,
+      "last_action": null
+    }
+  },
+  "identity": {
+    "traits": {
+      "discipline": 0.54,
+      "spontaneity": 0.3,
+      "social_orientation": 0.6599999999999999,
+      "independence": 0.4,
+      "adventurousness": 0.32,
+      "creativity": 0.4,
+      "loyalty": 0.74,
+      "curiosity": 0.6
+    },
+    "values": [
+      "Knowledge",
+      "Growth",
+      "Legacy"
+    ],
+    "fears": [
+      "Forgetting"
+    ],
+    "wants": [
+      "Growth"
+    ],
+    "narrative": "Maria is a disciplined guardian who values her Flock above all.",
+    "identity_statement": "A loyal guardian who values Knowledge.",
+    "trait_history": [
+      {
+        "timestamp": "2026-03-17T16:28:26.391320Z",
+        "action": "talk_palantir",
+        "trait_changes": {
+          "social_orientation": 0.05999999999999994,
+          "loyalty": 0.040000000000000036
+        },
+        "traits": {
+          "discipline": 0.5,
+          "spontaneity": 0.3,
+          "social_orientation": 0.6599999999999999,
+          "independence": 0.4,
+          "adventurousness": 0.3,
+          "creativity": 0.4,
+          "loyalty": 0.74,
+          "curiosity": 0.6
+        }
+      }
+    ],
+    "evolution_events": [],
+    "last_update": "2026-03-18T13:04:28.180029Z"
+  },
+  "environment": {
+    "time_of_day": "afternoon",
+    "hour": 12,
+    "day_of_week": "Tuesday",
+    "location": "home",
+    "weather": "sunny",
+    "season": "spring"
+  },
+  "inventory": {
+    "equipment": {
+      "running_shoes": {
+        "name": "Nike Pegasus 40",
+        "quality": "good",
+        "xp_bonus": 0.1,
+        "condition": 0.8
+      },
+      "rucking_pack": {
+        "name": "Osprey Stratos 36",
+        "quality": "excellent",
+        "xp_bonus": 0.15,
+        "condition": 0.9
+      },
+      "jeep": {
+        "name": "Wrangler Rubicon",
+        "model": "2024",
+        "condition": 0.95
+      }
+    },
+    "books": [
+      "Atomic Habits",
+      "Meditations"
+    ],
+    "playlists": [
+      "Workout Mix 2026"
+    ]
+  }
+}

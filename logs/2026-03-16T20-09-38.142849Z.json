@@ -1,0 +1,27 @@
+{
+  "timestamp": "2026-03-16T20:09:38.142849Z",
+  "action": "eat",
+  "duration_minutes": 30,
+  "previous_hash": "a60d0e0c0ae6c369",
+  "hash": "cc294dda2729a508",
+  "state_before": {
+    "energy": 65,
+    "hunger": 65,
+    "social": 60,
+    "fun": 55,
+    "purpose": 77
+  },
+  "effects": {
+    "energy": 5,
+    "hunger": 30,
+    "social": 0,
+    "fun": 3,
+    "purpose": 0,
+    "duration": 30
+  },
+  "verification": {
+    "level": 2,
+    "physics_check": "passed",
+    "chain_valid": true
+  }
+}
