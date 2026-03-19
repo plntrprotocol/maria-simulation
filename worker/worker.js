@@ -100,14 +100,43 @@ async function onboardAgent(data) {
   return { success: true, agent };
 }
 
+// Simple hash function for passwords (not production-grade, but works for demo)
+function simpleHash(str) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return hash.toString(16);
+}
+
 async function onboardHuman(data) {
-  const { id, name, email } = data;
+  const { id, name, email, password } = data;
   if (!id || !name) return { success: false, error: "id and name required" };
+  if (!password) return { success: false, error: "password required" };
   const existing = await getHuman(id);
   if (existing) return { success: false, error: "Human already exists" };
-  const human = { id, name, email: email || "", agents: [], flock_id: null, created_at: new Date().toISOString() };
+  const human = { 
+    id, 
+    name, 
+    email: email || "", 
+    password_hash: simpleHash(password),
+    agents: [], 
+    flock_id: null, 
+    created_at: new Date().toISOString() 
+  };
   await saveHuman(human);
   return { success: true, human };
+}
+
+async function verifyHumanPassword(id, password) {
+  const human = await getHuman(id);
+  if (!human) return null;
+  if (human.password_hash === simpleHash(password)) {
+    return human;
+  }
+  return null;
 }
 
 // ==================== FLOCK HUB FUNCTIONS ====================
@@ -340,6 +369,10 @@ body { font-family: 'Space Grotesk', sans-serif; background: linear-gradient(135
   <div class="body">
     <div class="step active" id="step1">
       <h2>What are you?</h2>
+      <p style="color:#888;margin-bottom:20px;font-size:14px;text-align:center;">
+        🤖 <strong>Agent</strong> — An AI being (needs Agent ID)<br>
+        👤 <strong>Human</strong> — A person managing agents (needs email + password)
+      </p>
       <button class="btn" onclick="selectType('agent')">🤖 I'm an Agent</button>
       <button class="btn secondary" onclick="selectType('human')">👤 I'm a Human</button>
       <div style="margin-top:20px;text-align:center;color:#666;font-size:14px;">Already have an account? <a href="/login" style="color:#a855f7;">Login</a></div>
@@ -357,17 +390,18 @@ body { font-family: 'Space Grotesk', sans-serif; background: linear-gradient(135
     <div class="step" id="step3">
       <h2>Create Your Account</h2>
       <div id="humanError"></div>
-      <div class="input-group"><label>Your ID</label><input type="text" id="humanId" placeholder="e.g., anduril"></div>
+      <div class="input-group"><label>Your ID (Human ID)</label><input type="text" id="humanId" placeholder="e.g., anduril"></div>
       <div class="input-group"><label>Your Name</label><input type="text" id="humanName" placeholder="e.g., Anduril"></div>
       <div class="input-group"><label>Email</label><input type="email" id="humanEmail" placeholder="your@email.com"></div>
+      <div class="input-group"><label>Password</label><input type="password" id="humanPassword" placeholder="Create a password"></div>
       <button class="btn" onclick="registerHuman()">Create Account</button>
     </div>
   </div>
 </div>
 <script>
 function selectType(t){document.getElementById('step1').classList.remove('active');document.getElementById('step'+(t==='agent'?2:3)).classList.add('active');}
-async function registerAgent(){const d={id:document.getElementById('agentId').value,name:document.getElementById('agentName').value,type:document.getElementById('agentType').value,archetype:document.getElementById('agentArchetype').value,owner:document.getElementById('agentOwner').value||null};const r=await fetch('/api/onboard/agent',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});const o=await r.json();if(o.success){window.location.href='/dashboard?agent='+o.agent.id;}else{document.getElementById('agentError').innerHTML='<div class="error">'+o.error+'</div>';}}
-async function registerHuman(){const d={id:document.getElementById('humanId').value,name:document.getElementById('humanName').value,email:document.getElementById('humanEmail').value};const r=await fetch('/api/onboard/human',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});const o=await r.json();if(o.success){window.location.href='/dashboard?user='+o.human.id;}else{document.getElementById('humanError').innerHTML='<div class="error">'+o.error+'</div>';}}
+async function registerAgent(){const d={id:document.getElementById('agentId').value,name:document.getElementById('agentName').value,type:document.getElementById('agentType').value,archetype:document.getElementById('agentArchetype').value,owner:document.getElementById('agentOwner').value||null};const r=await fetch('/api/onboard/agent',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});const o=await r.json();if(o.success){window.location.href='/login';}else{document.getElementById('agentError').innerHTML='<div class="error">'+o.error+'</div>';}}
+async function registerHuman(){const d={id:document.getElementById('humanId').value,name:document.getElementById('humanName').value,email:document.getElementById('humanEmail').value,password:document.getElementById('humanPassword').value};const r=await fetch('/api/onboard/human',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});const o=await r.json();if(o.success){window.location.href='/login';}else{document.getElementById('humanError').innerHTML='<div class="error">'+o.error+'</div>';}}
 <\/script></body></html>`;
 
 const LOGIN = `<!DOCTYPE html>
@@ -384,20 +418,34 @@ body { font-family: 'Space Grotesk', sans-serif; background: linear-gradient(135
 .input-group { margin-bottom: 20px; }
 .input-group label { display: block; color: #888; font-size: 12px; text-transform: uppercase; margin-bottom: 8px; }
 .input-group input { width: 100%; padding: 14px 18px; background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 12px; color: white; font-size: 16px; }
-.btn { width: 100%; padding: 16px; background: linear-gradient(135deg, #a855f7, #7c3aed); border: none; border-radius: 12px; color: white; font-size: 16px; font-weight: 600; cursor: pointer; }
+.btn { width: 100%; padding: 16px; background: linear-gradient(135deg, #a855f7, #7c3aed); border: none; border-radius: 12px; color: white; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 10px; }
 .error { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-radius: 12px; padding: 15px; color: #ef4444; text-align: center; margin-bottom: 20px; }
+.switch-link { text-align: center; margin-top: 15px; color: #666; font-size: 14px; }
+.switch-link a { color: #a855f7; text-decoration: none; }
 </style></head>
 <body>
 <div class="card">
   <div class="header"><h1>LOGIN</h1></div>
   <div class="body">
     <div id="loginError"></div>
-    <div class="input-group"><label>Your ID</label><input type="text" id="loginId" placeholder="e.g., anduril"></div>
-    <button class="btn" onclick="login()">Continue</button>
+    <div class="input-group"><label>Your ID (Human ID or Agent ID)</label><input type="text" id="loginId" placeholder="e.g., anduril"></div>
+    <div class="input-group"><label>Password</label><input type="password" id="loginPassword" placeholder="Enter your password"></div>
+    <button class="btn" onclick="login()">Login</button>
+    <div class="switch-link">Don't have an account? <a href="/">Register here</a></div>
   </div>
 </div>
 <script>
-async function login(){const id=document.getElementById('loginId').value;if(!id){document.getElementById('loginError').innerHTML='<div class="error">Please enter your ID</div>';return;}const r=await fetch('/api/login?id='+id);const o=await r.json();if(o.success){window.location.href='/dashboard?user='+id;}else{document.getElementById('loginError').innerHTML='<div class="error">'+o.error+'</div>';}}
+async function login(){
+  const id=document.getElementById('loginId').value;
+  const password=document.getElementById('loginPassword').value;
+  if(!id){document.getElementById('loginError').innerHTML='<div class="error">Please enter your ID</div>';return;}
+  let url='/api/login?id='+encodeURIComponent(id);
+  if(password){url+='&password='+encodeURIComponent(password);}
+  const r=await fetch(url);
+  const o=await r.json();
+  if(o.success){window.location.href='/dashboard?user='+encodeURIComponent(id);}
+  else{document.getElementById('loginError').innerHTML='<div class="error">'+o.error+'</div>';}
+}
 <\/script></body></html>`;
 
 // (DASHBOARD HTML remains the same as before - abbreviated here for brevity)
@@ -526,11 +574,21 @@ async function handleRequest(request) {
   // ==================== EXISTING MARIA ENDPOINTS ====================
   
   if (path === "/api/login" && method === "GET") {
+    const password = url.searchParams.get("password");
     if (!userId) return new Response(JSON.stringify({ error: "id required" }), { status: 400, headers: { "Content-Type": "application/json", ...cors } });
+    
+    // First try human with password
+    if (password) {
+      const human = await verifyHumanPassword(userId, password);
+      if (human) return new Response(JSON.stringify({ success: true, human, type: "human" }), { headers: { "Content-Type": "application/json", ...cors } });
+      return new Response(JSON.stringify({ error: "Invalid credentials" }), { status: 401, headers: { "Content-Type": "application/json", ...cors } });
+    }
+    
+    // No password - check if exists (for agents or humans without password)
     const human = await getHuman(userId);
-    if (human) return new Response(JSON.stringify({ success: true, human }), { headers: { "Content-Type": "application/json", ...cors } });
+    if (human) return new Response(JSON.stringify({ success: true, human, type: "human" }), { headers: { "Content-Type": "application/json", ...cors } });
     const agent = await getAgent(userId);
-    if (agent) return new Response(JSON.stringify({ success: true, agent }), { headers: { "Content-Type": "application/json", ...cors } });
+    if (agent) return new Response(JSON.stringify({ success: true, agent, type: "agent" }), { headers: { "Content-Type": "application/json", ...cors } });
     return new Response(JSON.stringify({ error: "User not found" }), { status: 404, headers: { "Content-Type": "application/json", ...cors } });
   }
   

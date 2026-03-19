@@ -1,0 +1,11 @@
+name = "maria-simulation"
+main = "worker/worker.js"
+compatibility_date = "2023-12-01"
+
+[env.production]
+name = "maria-simulation"
+routes = [{ pattern = "maria-simulation.plntrprotocol.workers.dev", zone_name = "plntrprotocol.workers.dev" }]
+
+[[kv_namespaces]]
+binding = "MARIA_STATE"
+id = "a601779d6ffe430aa5bad629c01a693c"
