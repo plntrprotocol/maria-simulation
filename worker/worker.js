@@ -79,11 +79,14 @@ async function saveHuman(human) {
   await MARIA_STATE.put("human:" + human.id, JSON.stringify(human));
 }
 
+function generateApiKey() { return "ak_" + Math.random().toString(36).substr(2, 10) + Math.random().toString(36).substr(2, 10); }
+
 async function onboardAgent(data) {
   const { id, name, type, archetype, owner, description } = data;
   if (!id || !name) return { success: false, error: "id and name required" };
   const existing = await getAgent(id);
   if (existing) return { success: false, error: "Agent already exists" };
+  const api_key = generateApiKey();
   const agent = { 
     id, name, 
     type: type || "general", 
@@ -94,10 +97,12 @@ async function onboardAgent(data) {
     public: true, 
     onboarding_complete: true, 
     flock_id: null,
+    api_key,
     registered_at: new Date().toISOString() 
   };
   await saveAgent(agent);
-  return { success: true, agent };
+  await MARIA_STATE.put("apikey:" + api_key, JSON.stringify({ id, type: "agent" }));
+  return { success: true, agent, api_key };
 }
 
 // Simple hash function for passwords (not production-grade, but works for demo)
@@ -117,6 +122,7 @@ async function onboardHuman(data) {
   if (!password) return { success: false, error: "password required" };
   const existing = await getHuman(id);
   if (existing) return { success: false, error: "Human already exists" };
+  const api_key = generateApiKey();
   const human = { 
     id, 
     name, 
@@ -124,10 +130,12 @@ async function onboardHuman(data) {
     password_hash: simpleHash(password),
     agents: [], 
     flock_id: null, 
+    api_key,
     created_at: new Date().toISOString() 
   };
   await saveHuman(human);
-  return { success: true, human };
+  await MARIA_STATE.put("apikey:" + api_key, JSON.stringify({ id, type: "human" }));
+  return { success: true, human, api_key };
 }
 
 async function verifyHumanPassword(id, password) {
@@ -489,7 +497,10 @@ body { font-family: 'Space Grotesk', sans-serif; background: linear-gradient(135
       <h1>🤖 FLOCK DASHBOARD</h1>
       <div id="userWelcome" style="color:#888;font-size:14px;margin-top:5px;">Welcome, <span id="userName">...</span></div>
     </div>
-    <div><span class="badge">FLOCK HUB</span></div>
+    <div style="text-align:right;">
+      <span class="badge" style="margin-bottom:8px;display:inline-block;">FLOCK HUB</span><br>
+      <div style="font-size:12px;color:#888;">API Key: <code id="userApiKey" style="background:#1a1a2e;padding:4px 8px;border-radius:4px;color:#a855f7;">...</code></div>
+    </div>
   </div>
   
   <!-- Create Flock Section (shown when no flock) -->
@@ -507,12 +518,22 @@ body { font-family: 'Space Grotesk', sans-serif; background: linear-gradient(135
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
         <h2 style="margin-bottom:0;">🦅 The Flock</h2>
         <div style="display:flex;gap:5px;">
-          <input type="text" id="newAgentId" placeholder="Agent ID" style="padding:6px 10px;background:#1a1a2e;border:1px solid #2a2a4a;border-radius:6px;color:white;font-size:12px;width:120px;">
-          <button class="btn" onclick="addAgentToFlock()" style="padding:6px 12px;margin:0;font-size:12px;border-radius:6px;">Add Agent</button>
+          <input type="text" id="newAgentId" placeholder="Existing Agent ID" style="padding:6px 10px;background:#1a1a2e;border:1px solid #2a2a4a;border-radius:6px;color:white;font-size:12px;width:120px;">
+          <button class="btn" onclick="addAgentToFlock()" style="padding:6px 12px;margin:0;font-size:12px;border-radius:6px;">Join</button>
         </div>
       </div>
       <div class="flock-grid" id="flockMembers">
         <div style="color:#666;text-align:center;padding:20px;">Loading...</div>
+      </div>
+      
+      <div style="margin-top:20px;padding-top:15px;border-top:1px solid #2a2a4a;">
+        <h3 style="font-size:12px;color:#a855f7;text-transform:uppercase;margin-bottom:10px;">Create New Agent</h3>
+        <div style="display:grid;gap:10px;">
+          <input type="text" id="createAgentId" placeholder="Agent ID (e.g. sentinel)" style="padding:10px;background:#1a1a2e;border:1px solid #2a2a4a;border-radius:8px;color:white;">
+          <input type="text" id="createAgentName" placeholder="Agent Name (e.g. Sentinel)" style="padding:10px;background:#1a1a2e;border:1px solid #2a2a4a;border-radius:8px;color:white;">
+          <button class="btn" onclick="createNewAgent()" style="padding:10px;">Create & Add to Flock</button>
+          <div id="newAgentKeyDisplay" style="display:none;margin-top:10px;padding:10px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:8px;font-size:12px;"></div>
+        </div>
       </div>
     </div>
     <div class="card">
@@ -556,6 +577,7 @@ async function loadFlock() {
     
     // Show user name
     document.getElementById('userName').textContent = entity.name || userId;
+    if (document.getElementById('userApiKey')) document.getElementById('userApiKey').textContent = entity.api_key || 'No Key';
     
     if (!entity.flock_id) {
       // Show create flock section
@@ -656,9 +678,55 @@ async function addAgentToFlock() {
     alert('Error adding agent');
   }
 }
+
+async function createNewAgent() {
+  const id = document.getElementById('createAgentId').value;
+  const name = document.getElementById('createAgentName').value;
+  if (!id || !name) { alert('Agent ID and Name required'); return; }
+  
+  try {
+    const r = await fetch('/api/onboard/agent', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, name, type: 'general', archetype: 'unknown', owner: userId })
+    });
+    const o = await r.json();
+    if (o.success) {
+      // Auto-add to flock
+      if (window.currentFlockId) {
+        await fetch('/api/flock/join', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ flock_id: window.currentFlockId, entity_id: id, entity_type: 'agent' })
+        });
+      }
+      document.getElementById('newAgentKeyDisplay').style.display = 'block';
+      document.getElementById('newAgentKeyDisplay').innerHTML = '<strong>Agent Created!</strong><br>ID: ' + id + '<br>API Key: <code style="color:#10b981;">' + o.api_key + '</code><br><span style="color:#888;">Save this key! It will not be shown again.</span>';
+      document.getElementById('createAgentId').value = '';
+      document.getElementById('createAgentName').value = '';
+      loadFlock();
+    } else {
+      alert('Error: ' + o.error);
+    }
+  } catch (e) {
+    alert('Error creating agent');
+  }
+}
+
 <\/script></body></html>`;
 
 // ==================== REQUEST HANDLER ====================
+
+
+async function ensureApiKey(entity, type) {
+  if (entity.api_key) return entity;
+  const api_key = generateApiKey();
+  entity.api_key = api_key;
+  if (type === "human") await saveHuman(entity);
+  else await saveAgent(entity);
+  await MARIA_STATE.put("apikey:" + api_key, JSON.stringify({ id: entity.id, type }));
+  return entity;
+}
 
 async function handleRequest(request) {
   const url = new URL(request.url);
@@ -678,14 +746,14 @@ async function handleRequest(request) {
     // First try human with password
     if (password) {
       const human = await verifyHumanPassword(userId, password);
-      if (human) return new Response(JSON.stringify({ success: true, human, type: "human" }), { headers: { "Content-Type": "application/json", ...cors } });
+      if (human) { human = await ensureApiKey(human, "human"); human = await ensureApiKey(human, "human"); return new Response(JSON.stringify({ success: true, human, type: "human" }), { headers: { "Content-Type": "application/json", ...cors } }); }
       // If password provided but wrong
       const existingHuman = await getHuman(userId);
       if (existingHuman && !existingHuman.password_hash) {
         // No password set - set it now
         existingHuman.password_hash = simpleHash(password);
         await saveHuman(existingHuman);
-        return new Response(JSON.stringify({ success: true, human: existingHuman, type: "human" }), { headers: { "Content-Type": "application/json", ...cors } });
+        existingHuman = await ensureApiKey(existingHuman, "human"); return new Response(JSON.stringify({ success: true, human: existingHuman, type: "human" }), { headers: { "Content-Type": "application/json", ...cors } });
       }
       return new Response(JSON.stringify({ error: "Invalid credentials" }), { status: 401, headers: { "Content-Type": "application/json", ...cors } });
     }
@@ -696,10 +764,10 @@ async function handleRequest(request) {
       if (human.password_hash) {
         return new Response(JSON.stringify({ error: "Password required" }), { status: 401, headers: { "Content-Type": "application/json", ...cors } });
       }
-      return new Response(JSON.stringify({ success: true, human, type: "human" }), { headers: { "Content-Type": "application/json", ...cors } });
+      human = await ensureApiKey(human, "human"); return new Response(JSON.stringify({ success: true, human, type: "human" }), { headers: { "Content-Type": "application/json", ...cors } });
     }
     const agent = await getAgent(userId);
-    if (agent) return new Response(JSON.stringify({ success: true, agent, type: "agent" }), { headers: { "Content-Type": "application/json", ...cors } });
+    if (agent) { agent = await ensureApiKey(agent, "agent"); return new Response(JSON.stringify({ success: true, agent, type: "agent" }), { headers: { "Content-Type": "application/json", ...cors } }); }
     return new Response(JSON.stringify({ error: "User not found" }), { status: 404, headers: { "Content-Type": "application/json", ...cors } });
   }
   
