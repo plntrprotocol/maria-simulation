@@ -444,7 +444,10 @@ async function login(){
     if(password){url+='&password='+encodeURIComponent(password);}
     const r=await fetch(url);
     const o=await r.json();
-    if(o.success){window.location.href='/dashboard?user='+encodeURIComponent(id);}
+    if(o.success){
+      if(password) localStorage.setItem('flock_pass', password);
+      window.location.href='/dashboard?user='+encodeURIComponent(id);
+    }
     else{document.getElementById('loginError').innerHTML='<div class="error">'+o.error+'</div>';}
   } catch(e) {
     console.error('Login error:', e);
@@ -531,7 +534,10 @@ async function loadFlock() {
   
   try {
     // Get entity info
-    const loginRes = await fetch('/api/login?id=' + encodeURIComponent(userId));
+    const pass = localStorage.getItem('flock_pass') || '';
+    let url = '/api/login?id=' + encodeURIComponent(userId);
+    if (pass) url += '&password=' + encodeURIComponent(pass);
+    const loginRes = await fetch(url);
     const loginData = await loginRes.json();
     if (!loginData.success) {
       window.location.href = '/login';
