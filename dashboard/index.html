@@ -467,6 +467,19 @@
                             <div style="background: rgba(124, 58, 237, 0.1); border: 1px solid rgba(124, 58, 237, 0.3); border-radius: 12px; padding: 1rem; margin-bottom: 1rem;">
                                 <div style="font-weight: 600; margin-bottom: 0.5rem;">🦅 Flock: <span id="flock-name-display">Loading...</span></div>
                                 <div style="font-size: 0.85rem; color: var(--text-dim);">Members: <span id="flock-member-count">0</span></div>
+                                <button onclick="showFlockSettings()" style="margin-top: 0.75rem; width: 100%; padding: 0.5rem; background: var(--bg-card-hover); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: var(--text); cursor: pointer; font-size: 0.85rem;">⚙️ Flock Settings</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Flock Settings Panel -->
+                        <div id="flock-settings-panel" style="display: none; margin-top: 1rem; padding: 1rem; background: rgba(0,0,0,0.2); border-radius: 8px;">
+                            <div style="margin-bottom: 1rem;">
+                                <label style="font-size: 0.8rem; color: var(--text-dim); display: block; margin-bottom: 0.25rem;">Flock Name</label>
+                                <input type="text" id="flock-name-input" style="width: 100%; padding: 0.5rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: var(--bg-card); color: var(--text);">
+                            </div>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <button class="btn" onclick="saveFlockSettings()" style="flex: 1;">Save</button>
+                                <button class="btn" onclick="hideFlockSettings()" style="flex: 1; background: var(--bg-card-hover);">Cancel</button>
                             </div>
                         </div>
                         
@@ -1037,6 +1050,46 @@
                 }
             } catch (e) {
                 alert('Error creating flock: ' + e.message);
+            }
+        }
+        
+        function showFlockSettings() {
+            const currentName = document.getElementById('flock-name-display').textContent;
+            document.getElementById('flock-name-input').value = currentName === 'Loading...' ? '' : currentName;
+            document.getElementById('flock-settings-panel').style.display = 'block';
+        }
+        
+        function hideFlockSettings() {
+            document.getElementById('flock-settings-panel').style.display = 'none';
+        }
+        
+        async function saveFlockSettings() {
+            const newName = document.getElementById('flock-name-input').value.trim();
+            if (!newName) {
+                showError('Please enter a flock name');
+                return;
+            }
+            
+            try {
+                const resp = await fetch('/api/flock', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id: currentUser.flock_id,
+                        name: newName
+                    })
+                });
+                
+                const data = await resp.json();
+                if (data.success || data.id) {
+                    document.getElementById('flock-name-display').textContent = newName;
+                    hideFlockSettings();
+                    showError('Flock updated!');
+                } else {
+                    showError('Failed to update flock');
+                }
+            } catch (e) {
+                showError('Error updating flock');
             }
         }
         

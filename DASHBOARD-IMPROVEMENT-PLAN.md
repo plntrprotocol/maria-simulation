@@ -36,15 +36,15 @@ These gaps were identified during phases 1-3. All must be fixed before new featu
 ### G.2 UI Consistency
 - [x] **Login page parameter fix** - Has old `?id=` logic hardcoded in HTML ✅
 - [x] **Human dashboard visualizations** - Mirror agent view visualizations for humans ✅
-- [ ] **Loading states** - Add loading spinners during API calls
-- [ ] **Error handling UI** - Show user-friendly errors
+- [x] **Loading states** - Add loading spinners during API calls ✅
+- [x] **Error handling UI** - Show user-friendly errors ✅
 
 ### G.3 Backend Validation
 - [ ] **Action API validation** - Make parameter validation more graceful
 - [ ] **Agent existence check** - Verify agent_id exists before recording actions
 
 ### G.4 Data & State
-- [ ] **Skills population** - Initialize skills in default state or populate via actions
+- [x] **Skills population** - Initialize skills in default state or populate via actions ✅
 - [x] **Goals UI** - Display and manage goals in dashboard ✅
 - [ ] **Manual state override** - Allow direct state editing
 
