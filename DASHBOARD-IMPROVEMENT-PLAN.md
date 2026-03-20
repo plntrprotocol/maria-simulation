@@ -1,7 +1,7 @@
 # Flock Hub Dashboard — Improvement Plan
 
 *Created: 2026-03-19*
-*Status: PHASE 4 COMPLETE ✅*
+*Status: PHASE G (GAP FIXES) COMPLETE ✅*
 
 ---
 
@@ -30,7 +30,7 @@ These gaps were identified during phases 1-3. All must be fixed before new featu
 
 ### G.1 Authentication & Session
 - [x] **Logout button** - User can't log out of dashboard ✅
-- [ ] **Password change UI** - Can't reset password after login
+- [x] **Password change UI** - Can't reset password after login ✅
 - [x] **Session persistence** - localStorage needs better handling ✅
 
 ### G.2 UI Consistency
@@ -46,7 +46,7 @@ These gaps were identified during phases 1-3. All must be fixed before new featu
 ### G.4 Data & State
 - [x] **Skills population** - Initialize skills in default state or populate via actions ✅
 - [x] **Goals UI** - Display and manage goals in dashboard ✅
-- [ ] **Manual state override** - Allow direct state editing
+- [x] **Manual state override** - Allow direct state editing ✅
 
 ### G.5 Flock Features (Partial)
 - [x] **Real-time presence** - Agents need heartbeat API to update presence ✅
