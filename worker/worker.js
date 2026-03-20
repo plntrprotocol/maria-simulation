@@ -1535,6 +1535,43 @@ async function handleRequest(request) {
     }
   }
   
+  // Agent heartbeat - ping to update presence
+  if (path === "/api/heartbeat" && method === "POST") {
+    try {
+      const body = await request.json();
+      const { agent_id, status, activity } = body;
+      
+      if (!agent_id) {
+        return new Response(JSON.stringify({ success: false, error: "agent_id required" }), { 
+          status: 400, headers: { "Content-Type": "application/json", ...cors } 
+        });
+      }
+      
+      // Verify agent exists
+      const agent = await getAgent(agent_id);
+      if (!agent) {
+        return new Response(JSON.stringify({ success: false, error: "Agent not found" }), { 
+          status: 404, headers: { "Content-Type": "application/json", ...cors } 
+        });
+      }
+      
+      // Update presence
+      const presence = await updatePresence(agent_id, status || "online", activity);
+      
+      return new Response(JSON.stringify({ 
+        success: true, 
+        presence: presence,
+        timestamp: new Date().toISOString()
+      }), { 
+        headers: { "Content-Type": "application/json", ...cors } 
+      });
+    } catch (e) {
+      return new Response(JSON.stringify({ success: false, error: e.message }), { 
+        status: 500, headers: { "Content-Type": "application/json", ...cors } 
+      });
+    }
+  }
+  
   // Get action history
   if (path === "/api/action" && method === "GET") {
     const agent_id = url.searchParams.get("agent_id");
