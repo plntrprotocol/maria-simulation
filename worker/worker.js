@@ -524,6 +524,7 @@ body { font-family: 'Space Grotesk', sans-serif; background: linear-gradient(135
       <div id="userWelcome" style="color:#888;font-size:14px;margin-top:5px;">Welcome, <span id="userName">...</span></div>
     </div>
     <div style="text-align:right;">
+      <button class="btn" onclick="logout()" style="padding:6px 12px;font-size:11px;margin-bottom:8px;background:#2a2a4a;">Logout</button><br>
       <span class="badge" style="margin-bottom:8px;display:inline-block;">FLOCK HUB</span><br>
       <div style="font-size:12px;color:#888;">API Key: <code id="userApiKey" style="background:#1a1a2e;padding:4px 8px;border-radius:4px;color:#a855f7;">...</code></div>
     </div>
@@ -684,6 +685,12 @@ body { font-family: 'Space Grotesk', sans-serif; background: linear-gradient(135
 <script>
 const userId = new URLSearchParams(window.location.search).get('user') || new URLSearchParams(window.location.search).get('agent');
 
+function logout() {
+  localStorage.removeItem('flock_pass');
+  localStorage.removeItem('flock_hub_user');
+  window.location.href = '/login';
+}
+
 async function loadFlock() {
   if (!userId) {
     window.location.href = '/login';
@@ -739,6 +746,7 @@ async function loadFlock() {
     // Show flock dashboard
     document.getElementById('noFlockSection').style.display = 'none';
     document.getElementById('flockDashboard').style.display = 'grid';
+    loadHumanVisualizations();
     
     // Get flock data
     const flockRes = await fetch('/api/flock?id=' + entity.flock_id);
@@ -873,7 +881,7 @@ async function loadActionHistory() {
   }
 }
 
-// Load Visualizations
+// Load Visualizations for Agent View
 async function loadVisualizations() {
   try {
     const statusResp = await fetch('/api/status');
@@ -887,8 +895,58 @@ async function loadVisualizations() {
     
     // Load skills
     loadSkills(state.skills || []);
+    
+    // Also load human-specific visualizations if in human view
+    loadHumanVisualizations();
   } catch(e) {
     console.error('Error loading visualizations:', e);
+  }
+}
+
+// Load Human Dashboard Visualizations
+async function loadHumanVisualizations() {
+  try {
+    const statusResp = await fetch('/api/status');
+    const state = await statusResp.json();
+    
+    // Mood overview
+    const moodContainer = document.getElementById('humanMoodChart');
+    if (moodContainer) {
+      const moodActions = (state.action_history || [])
+        .filter(a => a.action === 'set_mood')
+        .slice(0, 7)
+        .reverse();
+      
+      if (moodActions.length === 0) {
+        moodContainer.innerHTML = '<div style="color:#666;text-align:center;width:100%;">No mood data yet</div>';
+      } else {
+        const moodColors = {
+          'happy': '#10b981', 'calm': '#3b82f6', 'focused': '#a855f7',
+          'tired': '#f59e0b', 'anxious': '#ef4444', 'neutral': '#6b7280'
+        };
+        moodContainer.innerHTML = moodActions.map(a => {
+          const mood = a.parameters?.mood || 'neutral';
+          const color = moodColors[mood] || moodColors.neutral;
+          return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;"><div style="width:100%;background:' + color + ';border-radius:4px;min-height:20px;height:40px;"></div><div style="font-size:8px;color:#888;margin-top:4px;">' + mood.charAt(0).toUpperCase() + '</div></div>';
+        }).join('');
+      }
+    }
+    
+    // Skills list
+    const skillsContainer = document.getElementById('humanSkillsList');
+    if (skillsContainer) {
+      const skills = state.skills || [];
+      if (skills.length === 0) {
+        skillsContainer.innerHTML = '<div style="color:#666;text-align:center;padding:20px;">No skills yet</div>';
+      } else {
+        skillsContainer.innerHTML = skills.map(skill => 
+          '<div style="padding:8px;background:#1a1a2e;border-radius:6px;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center;"><span>' + (skill.name || skill) + '</span><span style="color:#a855f7;font-size:12px;">' + (skill.level || '★') + '</span></div>'
+        ).join('');
+      }
+    }
+    
+  } catch(e) {
+    console.error('Error loading human visualizations:', e);
   }
 }
 
