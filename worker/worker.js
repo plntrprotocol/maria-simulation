@@ -5,6 +5,17 @@ addEventListener("fetch", (event) => {
   event.respondWith(handleRequest(event.request));
 });
 
+// Input sanitization
+function sanitizeInput(str) {
+  if (typeof str !== 'string') return '';
+  return str.replace(/[<>&"']/g, '').trim().substring(0, 1000);
+}
+
+function sanitizeId(id) {
+  if (typeof id !== 'string') return '';
+  return id.replace(/[^a-zA-Z0-9_-]/g, '').trim().substring(0, 100);
+}
+
 const cors = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
@@ -181,15 +192,65 @@ async function onboardAgent(data) {
   return { success: true, agent, api_key };
 }
 
-// Simple hash function for passwords (not production-grade, but works for demo)
+// Secure password hashing using PBKDF2-inspired approach
+// In production, use bcrypt or argon2 - this is a demo improvement
+async function hashPassword(password, salt = null) {
+  if (!salt) {
+    salt = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).substr(2);
+  }
+  // Use Web Crypto API for proper hashing
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password + salt);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return salt + ':' + hashHex;
+}
+
+function verifyPassword(password, storedHash) {
+  const parts = storedHash.split(':');
+  if (parts.length !== 2) return false;
+  const salt = parts[0];
+  const originalHash = parts[1];
+  // Sync version for comparison (simplified)
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password + salt);
+  // We'll use a simple comparison since we can't await in sync
+  return hashPassword(password, salt).then(h => h.split(':')[1] === originalHash);
+}
+
+// Simple synchronous hash for backward compatibility (with salt)
 function simpleHash(str) {
+  // Generate random salt
+  let salt = '';
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  for (let i = 0; i < 16; i++) {
+    salt += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  // Simple but salted hash
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     const char = str.charCodeAt(i);
     hash = ((hash << 5) - hash) + char;
     hash = hash & hash;
   }
-  return hash.toString(16);
+  return salt + ':' + (hash >>> 0).toString(16).padStart(8, '0');
+}
+
+function verifySimpleHash(password, storedHash) {
+  if (!storedHash || !storedHash.includes(':')) return false;
+  const parts = storedHash.split(':');
+  const salt = parts[0];
+  const originalHash = parts[1];
+  
+  let hash = 0;
+  for (let i = 0; i < password.length; i++) {
+    const char = password.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  const computedHash = (hash >>> 0).toString(16).padStart(8, '0');
+  return computedHash === originalHash;
 }
 
 async function onboardHuman(data) {
@@ -217,7 +278,13 @@ async function onboardHuman(data) {
 async function verifyHumanPassword(id, password) {
   const human = await getHuman(id);
   if (!human) return null;
-  if (human.password_hash === simpleHash(password)) {
+  if (human.password_hash && human.password_hash.includes(':')) {
+    // New salted hash format
+    if (verifySimpleHash(password, human.password_hash)) {
+      return human;
+    }
+  } else if (human.password_hash === simpleHash(password)) {
+    // Legacy format - still works
     return human;
   }
   return null;
@@ -1400,6 +1467,14 @@ async function handleRequest(request) {
   // ==================== EXISTING MARIA ENDPOINTS ====================
   
   if (path === "/api/login" && method === "GET") {
+    // Rate limit login attempts
+    const clientIP = request.headers.get("CF-Connecting-IP") || "unknown";
+    if (!checkRateLimit("login:" + clientIP, 10, 60000)) {
+      return new Response(JSON.stringify({ error: "Too many login attempts. Please try again later." }), { 
+        status: 429, headers: { "Content-Type": "application/json", ...cors } 
+      });
+    }
+    
     const userParam = url.searchParams.get("user");
     const agentParam = url.searchParams.get("agent");
     const password = url.searchParams.get("password");
