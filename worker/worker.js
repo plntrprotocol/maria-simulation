@@ -495,6 +495,36 @@ const ONBOARDING = `<!DOCTYPE html>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;800&display=swap');
 * { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* Animations */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+.fade-in { animation: fadeIn 0.3s ease-out; }
+.pulse { animation: pulse 2s infinite; }
+
+/* Loading spinner */
+.spinner {
+  width: 20px; height: 20px; border: 2px solid #2a2a4a; border-top-color: #a855f7; border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; vertical-align: middle;
+}
+
+/* Smooth transitions */
+.card, .btn, .badge { transition: all 0.2s ease; }
+.card:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(168,85,247,0.15); }
+
+/* Button hover */
+.btn:hover { transform: scale(1.02); filter: brightness(1.1); }
+.btn:active { transform: scale(0.98); }
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .grid { grid-template-columns: 1fr !important; }
+  .container { padding: 10px !important; }
+  .card { padding: 15px !important; }
+  h1 { font-size: 20px !important; }
+  h2 { font-size: 16px !important; }
+}
 body { font-family: 'Space Grotesk', sans-serif; background: linear-gradient(135deg, #0a0a12 0%, #12121f 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
 .card { width: 100%; max-width: 500px; background: #0d0d18; border-radius: 24px; overflow: hidden; box-shadow: 0 40px 80px rgba(0,0,0,0.6), 0 0 40px rgba(168,85,247,0.1); border: 1px solid #2a2a4a; }
 .header { background: linear-gradient(135deg, #1a1a2e, #252540); padding: 30px; text-align: center; }
@@ -561,6 +591,36 @@ const LOGIN = `<!DOCTYPE html>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;800&display=swap');
 * { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* Animations */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+.fade-in { animation: fadeIn 0.3s ease-out; }
+.pulse { animation: pulse 2s infinite; }
+
+/* Loading spinner */
+.spinner {
+  width: 20px; height: 20px; border: 2px solid #2a2a4a; border-top-color: #a855f7; border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; vertical-align: middle;
+}
+
+/* Smooth transitions */
+.card, .btn, .badge { transition: all 0.2s ease; }
+.card:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(168,85,247,0.15); }
+
+/* Button hover */
+.btn:hover { transform: scale(1.02); filter: brightness(1.1); }
+.btn:active { transform: scale(0.98); }
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .grid { grid-template-columns: 1fr !important; }
+  .container { padding: 10px !important; }
+  .card { padding: 15px !important; }
+  h1 { font-size: 20px !important; }
+  h2 { font-size: 16px !important; }
+}
 body { font-family: 'Space Grotesk', sans-serif; background: linear-gradient(135deg, #0a0a12 0%, #12121f 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
 .card { width: 100%; max-width: 400px; background: #0d0d18; border-radius: 24px; overflow: hidden; box-shadow: 0 40px 80px rgba(0,0,0,0.6); border: 1px solid #2a2a4a; }
 .header { background: linear-gradient(135deg, #1a1a2e, #252540); padding: 30px; text-align: center; }
@@ -615,6 +675,36 @@ const DASHBOARD = `<!DOCTYPE html>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;800&display=swap');
 * { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* Animations */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+.fade-in { animation: fadeIn 0.3s ease-out; }
+.pulse { animation: pulse 2s infinite; }
+
+/* Loading spinner */
+.spinner {
+  width: 20px; height: 20px; border: 2px solid #2a2a4a; border-top-color: #a855f7; border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; vertical-align: middle;
+}
+
+/* Smooth transitions */
+.card, .btn, .badge { transition: all 0.2s ease; }
+.card:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(168,85,247,0.15); }
+
+/* Button hover */
+.btn:hover { transform: scale(1.02); filter: brightness(1.1); }
+.btn:active { transform: scale(0.98); }
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .grid { grid-template-columns: 1fr !important; }
+  .container { padding: 10px !important; }
+  .card { padding: 15px !important; }
+  h1 { font-size: 20px !important; }
+  h2 { font-size: 16px !important; }
+}
 body { font-family: 'Space Grotesk', sans-serif; background: linear-gradient(135deg, #0a0a12 0%, #12121f 100%); min-height: 100vh; padding: 20px; color: white; }
 .container { max-width: 1100px; margin: 0 auto; }
 .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; flex-wrap: wrap; gap: 15px; }
@@ -838,6 +928,20 @@ body { font-family: 'Space Grotesk', sans-serif; background: linear-gradient(135
 <script>
 const userId = new URLSearchParams(window.location.search).get('user') || new URLSearchParams(window.location.search).get('agent');
 
+// Show loading spinner
+function showLoading(elementId) {
+  const el = document.getElementById(elementId);
+  if (el) el.innerHTML = '<div class="spinner"></div> Loading...';
+}
+
+// Add fade-in class to cards
+function fadeInElements() {
+  document.querySelectorAll('.card').forEach((card, i) => {
+    card.classList.add('fade-in');
+    card.style.animationDelay = (i * 0.1) + 's';
+  });
+}
+
 function logout() {
   localStorage.removeItem('flock_pass');
   localStorage.removeItem('flock_hub_user');
@@ -940,6 +1044,19 @@ async function loadFlock() {
 
 loadFlock();
 setInterval(loadFlock, 30000);
+
+// Auto-refresh visualizations every 30 seconds
+setInterval(() => {
+  if (typeof loadVisualizations === 'function') loadVisualizations();
+  if (typeof loadHumanVisualizations === 'function') loadHumanVisualizations();
+}, 30000);
+
+// Add fade-in animation on load
+if (document.readyState === 'complete') {
+  fadeInElements();
+} else {
+  window.addEventListener('load', fadeInElements);
+}
 
 async function loadAgentFlock(flockId) {
   try {
