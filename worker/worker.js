@@ -642,6 +642,14 @@ body { font-family: 'Space Grotesk', sans-serif; background: linear-gradient(135
           <div style="color:#666;text-align:center;padding:20px;">Loading...</div>
         </div>
       </div>
+      
+      <!-- Goals -->
+      <div class="card">
+        <h2 style="margin-bottom:15px;">🎯 Goals</h2>
+        <div id="goalsList" style="max-height:150px;overflow-y:auto;">
+          <div style="color:#666;text-align:center;padding:20px;">Loading...</div>
+        </div>
+      </div>
     </div>
   </div>
   
@@ -896,6 +904,9 @@ async function loadVisualizations() {
     // Load skills
     loadSkills(state.skills || []);
     
+    // Load goals
+    loadGoals(state.goals || []);
+    
     // Also load human-specific visualizations if in human view
     loadHumanVisualizations();
   } catch(e) {
@@ -1008,6 +1019,37 @@ function loadSkills(skills) {
     '<span style="color:#a855f7;font-size:12px;">' + (skill.level || '★') + '</span>' +
     '</div>'
   ).join('');
+}
+
+function loadGoals(goals) {
+  const container = document.getElementById('goalsList');
+  if (container) {
+    if (!goals || goals.length === 0) {
+      container.innerHTML = '<div style="color:#666;text-align:center;padding:20px;">No goals yet</div>';
+    } else {
+      container.innerHTML = goals.map(g => 
+        '<div style="padding:10px;background:#1a1a2e;border-radius:6px;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center;">' +
+        '<span style="' + (g.completed ? 'text-decoration:line-through;color:#666;' : 'color:#10b981;') + '">' + g.text + '</span>' +
+        '<span style="font-size:12px;">' + (g.completed ? '✓' : '○') + '</span>' +
+        '</div>'
+      ).join('');
+    }
+  }
+  
+  // Also update human goals list
+  const humanContainer = document.getElementById('humanGoalsList');
+  if (humanContainer) {
+    if (!goals || goals.length === 0) {
+      humanContainer.innerHTML = '<div style="color:#666;text-align:center;padding:20px;">No goals yet</div>';
+    } else {
+      humanContainer.innerHTML = goals.map(g => 
+        '<div style="padding:10px;background:#1a1a2e;border-radius:6px;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center;">' +
+        '<span style="' + (g.completed ? 'text-decoration:line-through;color:#666;' : 'color:#10b981;') + '">' + g.text + '</span>' +
+        '<span style="font-size:12px;">' + (g.completed ? '✓' : '○') + '</span>' +
+        '</div>'
+      ).join('');
+    }
+  }
 }
 
 async function createFlock() {
