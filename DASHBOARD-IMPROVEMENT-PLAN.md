@@ -50,7 +50,7 @@ These gaps were identified during phases 1-3. All must be fixed before new featu
 
 ### G.5 Flock Features (Partial)
 - [x] **Real-time presence** - Agents need heartbeat API to update presence ✅
-- [ ] **Flock settings UI** - Rename flock, manage members
+- [x] **Flock settings UI** - Rename flock, manage members ✅
 
 ---
 

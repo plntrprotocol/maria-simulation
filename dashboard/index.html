@@ -483,6 +483,26 @@
                             </div>
                         </div>
                         
+                        <!-- Password Change -->
+                        <div class="card" style="margin-top: 1rem; border-color: var(--stress);">
+                            <h2>🔐 Password Settings</h2>
+                            <div id="password-change-panel" style="display: none; margin-top: 1rem;">
+                                <div style="margin-bottom: 0.75rem;">
+                                    <label style="font-size: 0.8rem; color: var(--text-dim); display: block; margin-bottom: 0.25rem;">Current Password</label>
+                                    <input type="password" id="current-password" style="width: 100%; padding: 0.5rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: var(--bg-card); color: var(--text);">
+                                </div>
+                                <div style="margin-bottom: 0.75rem;">
+                                    <label style="font-size: 0.8rem; color: var(--text-dim); display: block; margin-bottom: 0.25rem;">New Password</label>
+                                    <input type="password" id="new-password" style="width: 100%; padding: 0.5rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: var(--bg-card); color: var(--text);">
+                                </div>
+                                <div style="display: flex; gap: 0.5rem;">
+                                    <button class="btn" onclick="changePassword()" style="flex: 1;">Update Password</button>
+                                    <button class="btn" onclick="hidePasswordChange()" style="flex: 1; background: var(--bg-card-hover);">Cancel</button>
+                                </div>
+                            </div>
+                            <button class="btn" id="show-password-btn" onclick="showPasswordChange()" style="width: 100%;">Change Password</button>
+                        </div>
+                        
                         <div id="no-flock-panel" style="display: none;">
                             <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 12px; padding: 1.5rem; text-align: center; margin-bottom: 1rem;">
                                 <div style="font-size: 2rem; margin-bottom: 0.5rem;">🦅</div>
@@ -736,6 +756,22 @@
                     <div id="skills-container">
                         <div style="text-align: center; padding: 1rem; color: var(--text-dim);">Loading skills...</div>
                     </div>
+                </div>
+                
+                <!-- Manual State Override (Debug) -->
+                <div class="card" style="border-color: var(--hunger);">
+                    <h2>🔧 Debug: State Override</h2>
+                    <p style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 1rem;">Directly edit agent state (advanced)</p>
+                    
+                    <div id="state-override-panel" style="display: none;">
+                        <textarea id="state-json-input" style="width: 100%; height: 200px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; padding: 0.75rem; resize: vertical;"></textarea>
+                        <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem;">
+                            <button class="btn" onclick="applyStateOverride()" style="flex: 1;">Apply Changes</button>
+                            <button class="btn" onclick="hideStateOverride()" style="flex: 1; background: var(--bg-card-hover);">Cancel</button>
+                        </div>
+                    </div>
+                    
+                    <button class="btn" id="show-state-override-btn" onclick="showStateOverride()" style="width: 100%;">Edit State JSON</button>
                 </div>
                 </div> <!-- close agent-dashboard-view -->
             </div> <!-- close center-col -->
@@ -1063,6 +1099,55 @@
             document.getElementById('flock-settings-panel').style.display = 'none';
         }
         
+        function showPasswordChange() {
+            document.getElementById('password-change-panel').style.display = 'block';
+            document.getElementById('show-password-btn').style.display = 'none';
+        }
+        
+        function hidePasswordChange() {
+            document.getElementById('password-change-panel').style.display = 'none';
+            document.getElementById('show-password-btn').style.display = 'block';
+            document.getElementById('current-password').value = '';
+            document.getElementById('new-password').value = '';
+        }
+        
+        async function changePassword() {
+            const currentPass = document.getElementById('current-password').value;
+            const newPass = document.getElementById('new-password').value;
+            
+            if (!currentPass || !newPass) {
+                showError('Please fill in both fields');
+                return;
+            }
+            
+            if (newPass.length < 6) {
+                showError('Password must be at least 6 characters');
+                return;
+            }
+            
+            try {
+                const resp = await fetch('/api/password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id: currentUser.id,
+                        current_password: currentPass,
+                        new_password: newPass
+                    })
+                });
+                
+                const data = await resp.json();
+                if (data.success) {
+                    showError('Password updated!');
+                    hidePasswordChange();
+                } else {
+                    showError(data.error || 'Failed to update password');
+                }
+            } catch (e) {
+                showError('Error updating password');
+            }
+        }
+        
         async function saveFlockSettings() {
             const newName = document.getElementById('flock-name-input').value.trim();
             if (!newName) {
@@ -1262,6 +1347,7 @@
                     }
                 }
                 
+                currentStateData = data; // Store for state override
                 updateUI(data);
                 generateGlobalStream();
                 
@@ -1381,6 +1467,45 @@
                     `).join('')}
                 </div>
             `;
+        }
+        
+        // State Override Functions
+        let currentStateData = {};
+        
+        function showStateOverride() {
+            document.getElementById('state-override-panel').style.display = 'block';
+            document.getElementById('show-state-override-btn').style.display = 'none';
+            
+            // Populate with current state
+            document.getElementById('state-json-input').value = JSON.stringify(currentStateData, null, 2);
+        }
+        
+        function hideStateOverride() {
+            document.getElementById('state-override-panel').style.display = 'none';
+            document.getElementById('show-state-override-btn').style.display = 'block';
+        }
+        
+        async function applyStateOverride() {
+            const jsonStr = document.getElementById('state-json-input').value;
+            try {
+                const newState = JSON.parse(jsonStr);
+                
+                const resp = await fetch('/api/sync', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ agent_id: currentAgent, state: newState })
+                });
+                
+                if (resp.ok) {
+                    showError('State updated!');
+                    hideStateOverride();
+                    loadData();
+                } else {
+                    showError('Failed to apply state');
+                }
+            } catch (e) {
+                showError('Invalid JSON: ' + e.message);
+            }
         }
         
         function updateBrainState(brain) {

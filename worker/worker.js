@@ -1739,7 +1739,24 @@ async function handleRequest(request) {
   if (path === "/api/password" && method === "POST") {
     try {
       const body = await request.json();
-      const { id, password } = body;
+      const { id, password, current_password, new_password } = body;
+      
+      // Password change with verification
+      if (current_password && new_password) {
+        let human = await getHuman(id);
+        if (!human) return new Response(JSON.stringify({ success: false, error: "Human not found" }), { status: 404, headers: { "Content-Type": "application/json", ...cors } });
+        
+        // Verify current password
+        if (human.password_hash !== simpleHash(current_password)) {
+          return new Response(JSON.stringify({ success: false, error: "Current password is incorrect" }), { status: 401, headers: { "Content-Type": "application/json", ...cors } });
+        }
+        
+        human.password_hash = simpleHash(new_password);
+        await saveHuman(human);
+        return new Response(JSON.stringify({ success: true, message: "Password updated" }), { headers: { "Content-Type": "application/json", ...cors } });
+      }
+      
+      // Simple password set (for initial setup)
       if (!id || !password) return new Response(JSON.stringify({ success: false, error: "id and password required" }), { status: 400, headers: { "Content-Type": "application/json", ...cors } });
       
       // Try human first
