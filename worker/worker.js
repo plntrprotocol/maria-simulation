@@ -480,7 +480,7 @@ async function login(){
     const o=await r.json();
     if(o.success){
       if(password) localStorage.setItem('flock_pass', password);
-      window.location.href='/dashboard?user='+encodeURIComponent(id);
+      window.location.href='/dashboard?'+(o.type==='human'?'user':'agent')+'='+encodeURIComponent(id);
     }
     else{document.getElementById('loginError').innerHTML='<div class="error">'+o.error+'</div>';}
   } catch(e) {
@@ -645,8 +645,9 @@ async function loadFlock() {
   try {
     // Get entity info
     const pass = localStorage.getItem('flock_pass') || '';
-    let url = '/api/login?id=' + encodeURIComponent(userId);
-    if (pass) url += '&password=' + encodeURIComponent(pass);
+    // Use correct parameter based on entity type
+    let url = '/api/' + (entityType === 'human' ? 'login?user=' : 'login?agent=') + encodeURIComponent(userId);
+    if (entityType === 'human' && pass) url += '&password=' + encodeURIComponent(pass);
     const loginRes = await fetch(url);
     const loginData = await loginRes.json();
     if (!loginData.success) {
@@ -933,35 +934,41 @@ async function handleRequest(request) {
   // ==================== EXISTING MARIA ENDPOINTS ====================
   
   if (path === "/api/login" && method === "GET") {
+    const userParam = url.searchParams.get("user");
+    const agentParam = url.searchParams.get("agent");
     const password = url.searchParams.get("password");
-    if (!userId) return new Response(JSON.stringify({ error: "id required" }), { status: 400, headers: { "Content-Type": "application/json", ...cors } });
     
-    // First try human with password
-    if (password) {
-      let human = await verifyHumanPassword(userId, password);
+    // Determine if this is a human or agent login attempt
+    const isHumanLogin = userParam !== null;
+    const isAgentLogin = agentParam !== null;
+    const loginId = userParam || agentParam;
+    
+    if (!loginId) return new Response(JSON.stringify({ error: "id required (use ?user= for humans, ?agent= for agents)" }), { status: 400, headers: { "Content-Type": "application/json", ...cors } });
+    
+    // HUMAN LOGIN - must use ?user= parameter
+    if (isHumanLogin) {
+      if (!password) return new Response(JSON.stringify({ error: "Password required for human login" }), { status: 401, headers: { "Content-Type": "application/json", ...cors } });
+      
+      let human = await verifyHumanPassword(loginId, password);
       if (human) { human = await ensureApiKey(human, "human"); return new Response(JSON.stringify({ success: true, human, type: "human" }), { headers: { "Content-Type": "application/json", ...cors } }); }
-      // If password provided but wrong
-      let existingHuman = await getHuman(userId);
-      if (existingHuman && !existingHuman.password_hash) {
-        // No password set - set it now
-        existingHuman.password_hash = simpleHash(password);
-        await saveHuman(existingHuman);
-        existingHuman = await ensureApiKey(existingHuman, "human"); return new Response(JSON.stringify({ success: true, human: existingHuman, type: "human" }), { headers: { "Content-Type": "application/json", ...cors } });
+      
+      // Check if human exists but wrong password
+      let existingHuman = await getHuman(loginId);
+      if (existingHuman) {
+        return new Response(JSON.stringify({ error: "Invalid password" }), { status: 401, headers: { "Content-Type": "application/json", ...cors } });
       }
-      return new Response(JSON.stringify({ error: "Invalid credentials" }), { status: 401, headers: { "Content-Type": "application/json", ...cors } });
+      
+      return new Response(JSON.stringify({ error: "Human not found" }), { status: 404, headers: { "Content-Type": "application/json", ...cors } });
     }
     
-    // No password - allow legacy login (for humans without password) or agents
-    let human = await getHuman(userId);
-    if (human) {
-      if (human.password_hash) {
-        return new Response(JSON.stringify({ error: "Password required" }), { status: 401, headers: { "Content-Type": "application/json", ...cors } });
-      }
-      human = await ensureApiKey(human, "human"); return new Response(JSON.stringify({ success: true, human, type: "human" }), { headers: { "Content-Type": "application/json", ...cors } });
+    // AGENT LOGIN - must use ?agent= parameter (no password, just ID)
+    if (isAgentLogin) {
+      let agent = await getAgent(loginId);
+      if (agent) { agent = await ensureApiKey(agent, "agent"); return new Response(JSON.stringify({ success: true, agent, type: "agent" }), { headers: { "Content-Type": "application/json", ...cors } }); }
+      return new Response(JSON.stringify({ error: "Agent not found" }), { status: 404, headers: { "Content-Type": "application/json", ...cors } });
     }
-    let agent = await getAgent(userId);
-    if (agent) { agent = await ensureApiKey(agent, "agent"); return new Response(JSON.stringify({ success: true, agent, type: "agent" }), { headers: { "Content-Type": "application/json", ...cors } }); }
-    return new Response(JSON.stringify({ error: "User not found" }), { status: 404, headers: { "Content-Type": "application/json", ...cors } });
+    
+    return new Response(JSON.stringify({ error: "Use ?user= for humans or ?agent= for agents" }), { status: 400, headers: { "Content-Type": "application/json", ...cors } });
   }
   
   if (path === "/api/onboard/agent" && method === "POST") {
