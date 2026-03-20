@@ -807,6 +807,7 @@ body { font-family: 'Space Grotesk', sans-serif; background: linear-gradient(135
           <input type="text" id="tokenName" placeholder="Token name (e.g., My App)" style="padding:10px;background:#1a1a2e;border:1px solid #2a2a4a;border-radius:8px;color:white;">
           <button class="btn" onclick="generateToken()" style="padding:10px;font-size:12px;">Generate Token</button>
           <div id="tokenDisplay" style="display:none;padding:10px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:6px;font-size:12px;word-break:break-all;"></div>
+        <div id="tokenListDisplay" style="margin-top:10px;max-height:150px;overflow-y:auto;"></div>
         </div>
       </div>
       
@@ -1009,6 +1010,34 @@ async function triggerCustomActivity() {
   document.getElementById('customActivity').value = '';
 }
 
+async function completeGoal(goalId) {
+  try {
+    await fetch('/api/action', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ agent_id: userId, action: 'complete_goal', parameters: { goal_id: goalId } })
+    });
+    loadVisualizations();
+  } catch(e) {
+    console.error('Error completing goal:', e);
+  }
+}
+
+async function deleteGoal(goalId) {
+  if (!confirm('Delete this goal?')) return;
+  
+  try {
+    await fetch('/api/goal', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ goal_id: goalId })
+    });
+    loadVisualizations();
+  } catch(e) {
+    console.error('Error deleting goal:', e);
+  }
+}
+
 async function addGoal() {
   const goal = document.getElementById('newGoal').value.trim();
   if (!goal) {
@@ -1118,9 +1147,17 @@ async function loadHumanVisualizations() {
 }
 
 function loadBrainState(brain) {
+  // If no brain data provided, fetch fresh
+  if (!brain || Object.keys(brain).length === 0) {
+    fetch('/api/status').then(r => r.json()).then(state => {
+      loadBrainState(state.brain || {});
+    });
+    return;
+  }
+  
   // VTA - Average of motivation drives
   if (brain.vta) {
-    const vta = (brain.vta.energy + brain.vta.purpose + brain.vta.curiosity + brain.vta.motivation) / 4;
+    const vta = (brain.vta.energy + brain.vta.purpose + (brain.vta.curiosity || 50) + (brain.vta.motivation || 50)) / 4;
     const vtaFill = document.getElementById('vtaFill');
     if (vtaFill) vtaFill.style.height = vta + '%';
   }
@@ -1229,8 +1266,10 @@ function loadGoals(goals) {
       container.innerHTML = goals.map(g => 
         '<div style="padding:10px;background:#1a1a2e;border-radius:6px;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center;">' +
         '<span style="' + (g.completed ? 'text-decoration:line-through;color:#666;' : 'color:#10b981;') + '">' + g.text + '</span>' +
-        '<span style="font-size:12px;">' + (g.completed ? '✓' : '○') + '</span>' +
-        '</div>'
+        '<div style="display:flex;gap:5px;">' +
+        (g.completed ? '' : '<button onclick="completeGoal(\'' + g.id + '\')" style="padding:3px 8px;background:#10b981;border:none;border-radius:4px;color:white;font-size:10px;cursor:pointer;">✓</button>') +
+        '<button onclick="deleteGoal(\'' + g.id + '\')" style="padding:3px 8px;background:#ef4444;border:none;border-radius:4px;color:white;font-size:10px;cursor:pointer;">×</button>' +
+        '</div></div>'
       ).join('');
     }
   }
@@ -1329,6 +1368,53 @@ async function changePassword() {
     setTimeout(() => { responseDiv.style.display = 'none'; }, 3000);
   } catch(e) {
     alert('Error changing password');
+  }
+}
+
+async function loadTokenList() {
+  if (!window.currentFlockId) return;
+  
+  try {
+    const resp = await fetch('/api/token?flock_id=' + window.currentFlockId);
+    const tokens = await resp.json();
+    
+    const container = document.getElementById('tokenListDisplay');
+    if (!container) return;
+    
+    if (!tokens || tokens.length === 0) {
+      container.innerHTML = '<div style="color:#666;text-align:center;padding:10px;">No tokens generated yet</div>';
+      return;
+    }
+    
+    container.innerHTML = tokens.map(t => 
+      '<div style="padding:10px;background:#1a1a2e;border-radius:6px;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center;">' +
+      '<div><div style="font-weight:600;">' + (t.name || 'Token') + '</div>' +
+      '<div style="font-size:11px;color:#888;">Created: ' + (t.created_at ? new Date(t.created_at).toLocaleDateString() : 'Unknown') + '</div></div>' +
+      '<button onclick="revokeToken(\'' + t.id + '\')" style="padding:5px 10px;background:#ef4444;border:none;border-radius:4px;color:white;font-size:11px;cursor:pointer;">Revoke</button></div>'
+    ).join('');
+  } catch(e) {
+    console.error('Error loading tokens:', e);
+  }
+}
+
+async function revokeToken(tokenId) {
+  if (!confirm('Are you sure you want to revoke this token? This cannot be undone.')) return;
+  
+  try {
+    const resp = await fetch('/api/token', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token_id: tokenId, flock_id: window.currentFlockId })
+    });
+    const data = await resp.json();
+    
+    if (data.success) {
+      loadTokenList();
+    } else {
+      alert('Error: ' + (data.error || 'Failed to revoke token'));
+    }
+  } catch(e) {
+    alert('Error revoking token');
   }
 }
 
@@ -1820,6 +1906,33 @@ async function handleRequest(request) {
         presence: presence,
         timestamp: new Date().toISOString()
       }), { 
+        headers: { "Content-Type": "application/json", ...cors } 
+      });
+    } catch (e) {
+      return new Response(JSON.stringify({ success: false, error: e.message }), { 
+        status: 500, headers: { "Content-Type": "application/json", ...cors } 
+      });
+    }
+  }
+  
+  // Delete a goal
+  if (path === "/api/goal" && method === "DELETE") {
+    const body = await request.json();
+    const { goal_id } = body;
+    
+    if (!goal_id) {
+      return new Response(JSON.stringify({ success: false, error: "goal_id required" }), { 
+        status: 400, headers: { "Content-Type": "application/json", ...cors } 
+      });
+    }
+    
+    try {
+      const state = await getState();
+      if (state.goals) {
+        state.goals = state.goals.filter(g => g.id !== goal_id);
+        await saveFullState(state);
+      }
+      return new Response(JSON.stringify({ success: true }), { 
         headers: { "Content-Type": "application/json", ...cors } 
       });
     } catch (e) {
