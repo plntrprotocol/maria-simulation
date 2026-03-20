@@ -504,7 +504,13 @@ body { font-family: 'Space Grotesk', sans-serif; background: linear-gradient(135
   
   <div class="grid" id="flockDashboard" style="display:none;">
     <div class="card">
-      <h2>🦅 The Flock</h2>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
+        <h2 style="margin-bottom:0;">🦅 The Flock</h2>
+        <div style="display:flex;gap:5px;">
+          <input type="text" id="newAgentId" placeholder="Agent ID" style="padding:6px 10px;background:#1a1a2e;border:1px solid #2a2a4a;border-radius:6px;color:white;font-size:12px;width:120px;">
+          <button class="btn" onclick="addAgentToFlock()" style="padding:6px 12px;margin:0;font-size:12px;border-radius:6px;">Add Agent</button>
+        </div>
+      </div>
       <div class="flock-grid" id="flockMembers">
         <div style="color:#666;text-align:center;padding:20px;">Loading...</div>
       </div>
@@ -546,6 +552,7 @@ async function loadFlock() {
     
     const entity = loginData.agent || loginData.human;
     const entityType = loginData.agent ? 'agent' : 'human';
+    window.currentFlockId = entity.flock_id;
     
     // Show user name
     document.getElementById('userName').textContent = entity.name || userId;
@@ -622,6 +629,31 @@ async function createFlock() {
     }
   } catch(e) {
     alert('Error creating flock');
+  }
+}
+
+async function addAgentToFlock() {
+  const agentId = document.getElementById('newAgentId').value;
+  if (!agentId) {
+    alert('Please enter an Agent ID');
+    return;
+  }
+  
+  try {
+    const resp = await fetch('/api/flock/join', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ flock_id: window.currentFlockId, entity_id: agentId, entity_type: 'agent' })
+    });
+    const data = await resp.json();
+    if (data.success) {
+      document.getElementById('newAgentId').value = '';
+      loadFlock();
+    } else {
+      alert('Error adding agent: ' + data.error);
+    }
+  } catch(e) {
+    alert('Error adding agent');
   }
 }
 <\/script></body></html>`;
