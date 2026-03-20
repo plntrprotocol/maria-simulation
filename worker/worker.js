@@ -554,6 +554,46 @@ body { font-family: 'Space Grotesk', sans-serif; background: linear-gradient(135
         <div id="agentFlockMembers" style="margin-top:15px;"></div>
       </div>
     </div>
+    
+    <!-- Action Controls -->
+    <div class="card" style="margin-top:20px;">
+      <h2 style="margin-bottom:15px;">🎮 Action Controls</h2>
+      <p style="color:#888;font-size:12px;margin-bottom:15px;">Trigger actions on this agent</p>
+      
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:15px;">
+        <button class="btn" onclick="triggerAction('set_mood', {mood:'happy'})" style="padding:10px;font-size:12px;">😊 Happy</button>
+        <button class="btn" onclick="triggerAction('set_mood', {mood:'calm'})" style="padding:10px;font-size:12px;">😌 Calm</button>
+        <button class="btn" onclick="triggerAction('set_mood', {mood:'focused'})" style="padding:10px;font-size:12px;">🎯 Focused</button>
+        <button class="btn" onclick="triggerAction('set_mood', {mood:'tired'})" style="padding:10px;font-size:12px;">😴 Tired</button>
+      </div>
+      
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:15px;">
+        <button class="btn" onclick="triggerAction('update_needs', {energy:100})" style="padding:10px;font-size:12px;">⚡ Full Energy</button>
+        <button class="btn" onclick="triggerAction('update_needs', {social:100})" style="padding:10px;font-size:12px;">👥 Socialize</button>
+        <button class="btn" onclick="triggerAction('update_needs', {fun:100})" style="padding:10px;font-size:12px;">🎮 Play</button>
+        <button class="btn" onclick="triggerAction('update_needs', {purpose:100})" style="padding:10px;font-size:12px;">🎯 Purpose</button>
+      </div>
+      
+      <div style="margin-bottom:15px;">
+        <input type="text" id="customActivity" placeholder="Set activity (e.g., reading, working)" style="padding:10px;background:#1a1a2e;border:1px solid #2a2a4a;border-radius:8px;color:white;width:70%;">
+        <button class="btn" onclick="triggerCustomActivity()" style="padding:10px;width:25%;">Set</button>
+      </div>
+      
+      <div style="margin-bottom:15px;">
+        <input type="text" id="newGoal" placeholder="Add a new goal" style="padding:10px;background:#1a1a2e;border:1px solid #2a2a4a;border-radius:8px;color:white;width:70%;">
+        <button class="btn" onclick="addGoal()" style="padding:10px;width:25%;">Add Goal</button>
+      </div>
+      
+      <div id="actionResponse" style="display:none;margin-top:15px;padding:15px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:8px;text-align:center;"></div>
+    </div>
+    
+    <!-- Action History -->
+    <div class="card" style="margin-top:20px;">
+      <h2 style="margin-bottom:15px;">📜 Action History</h2>
+      <div id="actionHistory" style="max-height:300px;overflow-y:auto;">
+        <div style="color:#666;text-align:center;padding:20px;">Loading...</div>
+      </div>
+    </div>
   </div>
   
   <div class="grid" id="flockDashboard" style="display:none;">
@@ -631,6 +671,7 @@ async function loadFlock() {
       } else {
         document.getElementById('agentFlockId').textContent = 'Not in a flock';
       }
+      loadActionHistory();
       return;
     }
     
@@ -704,6 +745,81 @@ async function loadAgentFlock(flockId) {
     }
   } catch(e) {
     console.error('Error loading agent flock:', e);
+  }
+}
+
+// Action Control Functions
+async function triggerAction(action, parameters) {
+  try {
+    const resp = await fetch('/api/action', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        agent_id: userId,
+        action: action,
+        parameters: parameters
+      })
+    });
+    const data = await resp.json();
+    
+    const responseDiv = document.getElementById('actionResponse');
+    responseDiv.style.display = 'block';
+    if (data.success) {
+      responseDiv.innerHTML = '<strong style="color:#10b981;">✓ Action completed!</strong> ' + action;
+      loadActionHistory();
+      if (entityType === 'agent') {
+        loadAgentState();
+      }
+    } else {
+      responseDiv.innerHTML = '<strong style="color:#ef4444;">✗ Error:</strong> ' + (data.error || 'Unknown error');
+    }
+    
+    setTimeout(() => { responseDiv.style.display = 'none'; }, 3000);
+  } catch(e) {
+    console.error('Action error:', e);
+  }
+}
+
+async function triggerCustomActivity() {
+  const activity = document.getElementById('customActivity').value.trim();
+  if (!activity) {
+    alert('Please enter an activity');
+    return;
+  }
+  await triggerAction('set_activity', { activity: activity });
+  document.getElementById('customActivity').value = '';
+}
+
+async function addGoal() {
+  const goal = document.getElementById('newGoal').value.trim();
+  if (!goal) {
+    alert('Please enter a goal');
+    return;
+  }
+  await triggerAction('add_goal', { goal: goal });
+  document.getElementById('newGoal').value = '';
+}
+
+async function loadActionHistory() {
+  try {
+    const resp = await fetch('/api/action?limit=20');
+    const history = await resp.json();
+    
+    const container = document.getElementById('actionHistory');
+    if (!history || history.length === 0) {
+      container.innerHTML = '<div style="color:#666;text-align:center;padding:20px;">No actions yet</div>';
+      return;
+    }
+    
+    container.innerHTML = history.map(a => {
+      const time = new Date(a.timestamp).toLocaleString();
+      return '<div style="padding:10px;border-bottom:1px solid #2a2a4a;">' +
+        '<div style="font-weight:600;color:#a855f7;">' + a.action + '</div>' +
+        '<div style="font-size:12px;color:#666;">' + time + '</div>' +
+        '</div>';
+    }).join('');
+  } catch(e) {
+    console.error('Error loading action history:', e);
   }
 }
 
@@ -1015,6 +1131,141 @@ async function handleRequest(request) {
       return new Response(JSON.stringify(activity), { headers: { "Content-Type": "application/json", ...cors } });
     } catch (e) {
       return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { "Content-Type": "application/json", ...cors } });
+    }
+  }
+  
+  // ==================== ACTION ENDPOINTS ====================
+  
+  // Trigger an action on an agent
+  if (path === "/api/action" && method === "POST") {
+    try {
+      const body = await request.json();
+      const { agent_id, action, parameters } = body;
+      
+      if (!agent_id || !action) {
+        return new Response(JSON.stringify({ success: false, error: "agent_id and action required" }), { 
+          status: 400, headers: { "Content-Type": "application/json", ...cors } 
+        });
+      }
+      
+      // Get current state
+      const state = await getState();
+      
+      // Create action record
+      const actionRecord = {
+        id: "action_" + Date.now(),
+        agent_id,
+        action,
+        parameters: parameters || {},
+        timestamp: new Date().toISOString(),
+        status: "completed"
+      };
+      
+      // Add to action history
+      if (!state.action_history) state.action_history = [];
+      state.action_history.unshift(actionRecord);
+      if (state.action_history.length > 100) state.action_history.pop();
+      
+      // Update agent state based on action
+      let response = { success: true, action: actionRecord };
+      
+      // Handle specific actions
+      if (action === "set_mood") {
+        if (!parameters || !parameters.mood) {
+          return new Response(JSON.stringify({ success: false, error: "mood parameter required" }), { 
+            status: 400, headers: { "Content-Type": "application/json", ...cors } 
+          });
+        }
+        if (!state.emotions) state.emotions = {};
+        state.emotions.mood = parameters.mood;
+        state.emotions.narrative = parameters.narrative || "Mood set via dashboard";
+        response.new_state = state.emotions;
+      }
+      else if (action === "update_needs") {
+        if (parameters) {
+          if (!state.needs) state.needs = {};
+          if (parameters.energy) state.needs.energy = Math.min(100, Math.max(0, parameters.energy));
+          if (parameters.hunger) state.needs.hunger = Math.min(100, Math.max(0, parameters.hunger));
+          if (parameters.social) state.needs.social = Math.min(100, Math.max(0, parameters.social));
+          if (parameters.fun) state.needs.fun = Math.min(100, Math.max(0, parameters.fun));
+          if (parameters.purpose) state.needs.purpose = Math.min(100, Math.max(0, parameters.purpose));
+          response.new_state = state.needs;
+        }
+      }
+      else if (action === "set_activity") {
+        if (!parameters || !parameters.activity) {
+          return new Response(JSON.stringify({ success: false, error: "activity parameter required" }), { 
+            status: 400, headers: { "Content-Type": "application/json", ...cors } 
+          });
+        }
+        state.current_activity = parameters.activity;
+        response.new_state = { current_activity: state.current_activity };
+      }
+      else if (action === "add_goal") {
+        if (!parameters || !parameters.goal) {
+          return new Response(JSON.stringify({ success: false, error: "goal parameter required" }), { 
+            status: 400, headers: { "Content-Type": "application/json", ...cors } 
+          });
+        }
+        if (!state.goals) state.goals = [];
+        state.goals.push({
+          id: "goal_" + Date.now(),
+          text: parameters.goal,
+          completed: false,
+          created_at: new Date().toISOString()
+        });
+        response.new_state = { goals: state.goals };
+      }
+      else if (action === "complete_goal") {
+        if (!parameters || !parameters.goal_id) {
+          return new Response(JSON.stringify({ success: false, error: "goal_id parameter required" }), { 
+            status: 400, headers: { "Content-Type": "application/json", ...cors } 
+          });
+        }
+        if (state.goals) {
+          const goal = state.goals.find(g => g.id === parameters.goal_id);
+          if (goal) {
+            goal.completed = true;
+            goal.completed_at = new Date().toISOString();
+          }
+        }
+        response.new_state = { goals: state.goals };
+      }
+      
+      await saveFullState(state);
+      
+      return new Response(JSON.stringify(response), { 
+        headers: { "Content-Type": "application/json", ...cors } 
+      });
+    } catch (e) {
+      return new Response(JSON.stringify({ success: false, error: e.message }), { 
+        status: 500, headers: { "Content-Type": "application/json", ...cors } 
+      });
+    }
+  }
+  
+  // Get action history
+  if (path === "/api/action" && method === "GET") {
+    const agent_id = url.searchParams.get("agent_id");
+    const limit = parseInt(url.searchParams.get("limit") || "20");
+    
+    try {
+      const state = await getState();
+      let history = state.action_history || [];
+      
+      if (agent_id) {
+        history = history.filter(a => a.agent_id === agent_id);
+      }
+      
+      history = history.slice(0, limit);
+      
+      return new Response(JSON.stringify(history), { 
+        headers: { "Content-Type": "application/json", ...cors } 
+      });
+    } catch (e) {
+      return new Response(JSON.stringify({ error: e.message }), { 
+        status: 500, headers: { "Content-Type": "application/json", ...cors } 
+      });
     }
   }
   
