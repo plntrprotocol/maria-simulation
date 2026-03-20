@@ -539,6 +539,23 @@ body { font-family: 'Space Grotesk', sans-serif; background: linear-gradient(135
     </div>
   </div>
   
+  <!-- Agent View (shown for agents) -->
+  <div id="agentView" style="display:none;">
+    <div class="card" style="text-align:center;padding:40px;">
+      <h2 style="font-size:28px;margin-bottom:20px;">🤖 Agent Dashboard</h2>
+      <p style="color:#888;margin-bottom:20px;">Welcome, <span id="agentName" style="color:#a855f7;font-weight:600;"></span></p>
+      <div style="background:#1a1a2e;padding:20px;border-radius:12px;margin-bottom:20px;">
+        <div style="font-size:12px;color:#888;margin-bottom:5px;">Your API Key</div>
+        <code id="agentApiKey" style="color:#10b981;font-size:14px;"></code>
+      </div>
+      <div style="background:#1a1a2e;padding:20px;border-radius:12px;">
+        <div style="font-size:12px;color:#888;margin-bottom:5px;">Your Flock ID</div>
+        <div id="agentFlockId" style="color:#a855f7;font-weight:600;"></div>
+        <div id="agentFlockMembers" style="margin-top:15px;"></div>
+      </div>
+    </div>
+  </div>
+  
   <div class="grid" id="flockDashboard" style="display:none;">
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
@@ -601,6 +618,22 @@ async function loadFlock() {
     const entityType = loginData.agent ? 'agent' : 'human';
     window.currentFlockId = entity.flock_id;
     
+    // If agent, show agent-specific view
+    if (entityType === 'agent') {
+      document.getElementById('noFlockSection').style.display = 'none';
+      document.getElementById('flockDashboard').style.display = 'none';
+      document.getElementById('agentView').style.display = 'block';
+      document.getElementById('agentName').textContent = entity.name || userId;
+      document.getElementById('agentApiKey').textContent = entity.api_key || 'No API Key';
+      if (entity.flock_id) {
+        document.getElementById('agentFlockId').textContent = entity.flock_id;
+        loadAgentFlock(entity.flock_id);
+      } else {
+        document.getElementById('agentFlockId').textContent = 'Not in a flock';
+      }
+      return;
+    }
+    
     // Show user name
     document.getElementById('userName').textContent = entity.name || userId;
     if (document.getElementById('userApiKey')) document.getElementById('userApiKey').textContent = entity.api_key || 'No Key';
@@ -655,6 +688,24 @@ async function loadFlock() {
 
 loadFlock();
 setInterval(loadFlock, 30000);
+
+async function loadAgentFlock(flockId) {
+  try {
+    const resp = await fetch('/api/flock?id=' + flockId);
+    const flock = await resp.json();
+    if (flock && flock.members) {
+      const membersHtml = flock.members.map(m => 
+        '<div style="padding:10px;background:#1a1a2e;border-radius:8px;margin-bottom:5px;">' + 
+        (m.type === 'agent' ? '🤖' : '👤') + ' ' + m.id + 
+        '</div>'
+      ).join('');
+      document.getElementById('agentFlockMembers').innerHTML = 
+        '<div style="margin-top:15px;"><strong>Members:</strong></div>' + membersHtml;
+    }
+  } catch(e) {
+    console.error('Error loading agent flock:', e);
+  }
+}
 
 async function createFlock() {
   const flockName = document.getElementById('flockName').value;
