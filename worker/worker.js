@@ -34,7 +34,13 @@ function getDefaultState() {
     inventory: { equipment: {}, books: [], playlists: [] },
     desires: {},
     identity: {},
-    skills: [],
+    skills: [
+      { name: "Pattern Recognition", level: "★★★", category: "cognitive" },
+      { name: "Memory Synthesis", level: "★★★", category: "cognitive" },
+      { name: "Emotional Intelligence", level: "★★☆", category: "social" },
+      { name: "Narrative Construction", level: "★★☆", category: "creative" },
+      { name: "System Monitoring", level: "★★★", category: "technical" }
+    ],
     stats: {},
     goals: [],
     action_history: [],
@@ -667,6 +673,15 @@ body { font-family: 'Space Grotesk', sans-serif; background: linear-gradient(135
       </div>
       
       <div style="margin-top:20px;padding-top:15px;border-top:1px solid #2a2a4a;">
+        <h3 style="font-size:12px;color:#a855f7;text-transform:uppercase;margin-bottom:10px;">Account Settings</h3>
+        <div style="display:grid;gap:10px;">
+          <input type="password" id="newPassword" placeholder="New Password" style="padding:10px;background:#1a1a2e;border:1px solid #2a2a4a;border-radius:8px;color:white;">
+          <button class="btn" onclick="changePassword()" style="padding:10px;font-size:12px;">Change Password</button>
+          <div id="passwordChangeResponse" style="display:none;padding:8px;background:rgba(16,185,129,0.1);border-radius:6px;font-size:12px;text-align:center;"></div>
+        </div>
+      </div>
+      
+      <div style="margin-top:20px;padding-top:15px;border-top:1px solid #2a2a4a;">
         <h3 style="font-size:12px;color:#a855f7;text-transform:uppercase;margin-bottom:10px;">Create New Agent</h3>
         <div style="display:grid;gap:10px;">
           <input type="text" id="createAgentId" placeholder="Agent ID (e.g. sentinel)" style="padding:10px;background:#1a1a2e;border:1px solid #2a2a4a;border-radius:8px;color:white;">
@@ -816,6 +831,10 @@ async function loadAgentFlock(flockId) {
 
 // Action Control Functions
 async function triggerAction(action, parameters) {
+  const responseDiv = document.getElementById('actionResponse');
+  responseDiv.style.display = 'block';
+  responseDiv.innerHTML = '<span style="color:#888;">Processing...</span>';
+  
   try {
     const resp = await fetch('/api/action', {
       method: 'POST',
@@ -826,16 +845,19 @@ async function triggerAction(action, parameters) {
         parameters: parameters
       })
     });
+    
+    if (!resp.ok) {
+      responseDiv.innerHTML = '<strong style="color:#ef4444;">✗ Server Error:</strong> Please try again';
+      setTimeout(() => { responseDiv.style.display = 'none'; }, 3000);
+      return;
+    }
+    
     const data = await resp.json();
     
-    const responseDiv = document.getElementById('actionResponse');
-    responseDiv.style.display = 'block';
     if (data.success) {
       responseDiv.innerHTML = '<strong style="color:#10b981;">✓ Action completed!</strong> ' + action;
       loadActionHistory();
-      if (entityType === 'agent') {
-        loadAgentState();
-      }
+      loadVisualizations();
     } else {
       responseDiv.innerHTML = '<strong style="color:#ef4444;">✗ Error:</strong> ' + (data.error || 'Unknown error');
     }
@@ -843,6 +865,8 @@ async function triggerAction(action, parameters) {
     setTimeout(() => { responseDiv.style.display = 'none'; }, 3000);
   } catch(e) {
     console.error('Action error:', e);
+    responseDiv.innerHTML = '<strong style="color:#ef4444;">✗ Network Error:</strong> Check connection';
+    setTimeout(() => { responseDiv.style.display = 'none'; }, 3000);
   }
 }
 
@@ -1098,6 +1122,38 @@ async function addAgentToFlock() {
     }
   } catch(e) {
     alert('Error adding agent');
+  }
+}
+
+async function changePassword() {
+  const newPass = document.getElementById('newPassword').value;
+  if (!newPass || newPass.length < 4) {
+    alert('Password must be at least 4 characters');
+    return;
+  }
+  
+  try {
+    const resp = await fetch('/api/password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: userId, password: newPass })
+    });
+    const data = await resp.json();
+    
+    const responseDiv = document.getElementById('passwordChangeResponse');
+    responseDiv.style.display = 'block';
+    if (data.success) {
+      responseDiv.style.background = 'rgba(16,185,129,0.1)';
+      responseDiv.innerHTML = '✓ Password changed successfully!';
+      localStorage.setItem('flock_pass', newPass);
+    } else {
+      responseDiv.style.background = 'rgba(239,68,68,0.1)';
+      responseDiv.innerHTML = '✗ ' + (data.error || 'Failed');
+    }
+    
+    setTimeout(() => { responseDiv.style.display = 'none'; }, 3000);
+  } catch(e) {
+    alert('Error changing password');
   }
 }
 
