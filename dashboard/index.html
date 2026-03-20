@@ -434,8 +434,74 @@
                 </div>
             </div>
             
-            <!-- Center Column: Active Agent Overview -->
-            <div class="center-col" id="agent-profile">
+            <!-- Center Column: Dynamic based on user type -->
+            <div class="center-col">
+                <!-- HUMAN VIEW: Flock Management Panel -->
+                <div id="human-dashboard-view" style="display: none;">
+                    <div class="card">
+                        <h2>🏠 Your Flock Hub</h2>
+                        <p style="color: var(--text-dim); margin-bottom: 1rem; font-size: 0.9rem;">Manage your flock and agents</p>
+                        
+                        <div id="flock-info-panel">
+                            <div style="background: rgba(124, 58, 237, 0.1); border: 1px solid rgba(124, 58, 237, 0.3); border-radius: 12px; padding: 1rem; margin-bottom: 1rem;">
+                                <div style="font-weight: 600; margin-bottom: 0.5rem;">🦅 Flock: <span id="flock-name-display">Loading...</span></div>
+                                <div style="font-size: 0.85rem; color: var(--text-dim);">Members: <span id="flock-member-count">0</span></div>
+                            </div>
+                        </div>
+                        
+                        <div id="no-flock-panel" style="display: none;">
+                            <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 12px; padding: 1.5rem; text-align: center; margin-bottom: 1rem;">
+                                <div style="font-size: 2rem; margin-bottom: 0.5rem;">🦅</div>
+                                <div style="font-weight: 600; margin-bottom: 0.5rem;">No Flock Yet</div>
+                                <div style="font-size: 0.85rem; color: var(--text-dim);">Create a flock to manage your agents</div>
+                            </div>
+                            <button class="btn" onclick="createFlock()" style="width: 100%;">Create Flock</button>
+                        </div>
+                        
+                        <button class="btn" id="addAgentBtn" onclick="showAddAgentForm()" style="width: 100%; margin-top: 0.5rem;">+ Add Agent to Flock</button>
+                        
+                        <div id="add-agent-form" style="display: none; margin-top: 1rem; padding: 1rem; background: rgba(0,0,0,0.2); border-radius: 8px;">
+                            <div style="margin-bottom: 0.75rem;">
+                                <label style="font-size: 0.8rem; color: var(--text-dim); display: block; margin-bottom: 0.25rem;">Agent ID</label>
+                                <input type="text" id="newAgentId" placeholder="e.g., sentinel-2" style="width: 100%; padding: 0.5rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: var(--bg-card); color: var(--text);">
+                            </div>
+                            <div style="margin-bottom: 0.75rem;">
+                                <label style="font-size: 0.8rem; color: var(--text-dim); display: block; margin-bottom: 0.25rem;">Agent Name</label>
+                                <input type="text" id="newAgentName" placeholder="e.g., Sentinel Two" style="width: 100%; padding: 0.5rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: var(--bg-card); color: var(--text);">
+                            </div>
+                            <div style="margin-bottom: 0.75rem;">
+                                <label style="font-size: 0.8rem; color: var(--text-dim); display: block; margin-bottom: 0.25rem;">Archetype</label>
+                                <select id="newAgentArchetype" style="width: 100%; padding: 0.5rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: var(--bg-card); color: var(--text);">
+                                    <option value="guardian">Guardian / Maintenance</option>
+                                    <option value="explorer">Explorer / Knowledge</option>
+                                    <option value="creator">Creator / Synthesis</option>
+                                </select>
+                            </div>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <button class="btn" onclick="addAgentToFlock()" style="flex: 1;">Add Agent</button>
+                                <button class="btn" onclick="hideAddAgentForm()" style="flex: 1; background: var(--bg-card-hover);">Cancel</button>
+                            </div>
+                            <div id="addAgentError" style="color: var(--stress); font-size: 0.8rem; margin-top: 0.5rem;"></div>
+                        </div>
+                        
+                        <div id="agent-api-key-display" style="display: none; margin-top: 1rem; padding: 1rem; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px;">
+                            <div style="font-weight: 600; color: var(--energy); margin-bottom: 0.5rem;">✓ Agent Created!</div>
+                            <div style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 0.25rem;">API Key (save securely - shown once):</div>
+                            <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; word-break: break-all; color: var(--accent);" id="newAgentApiKey"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <h2>📊 Flock Presence</h2>
+                        <div id="flock-presence-list" style="max-height: 300px; overflow-y: auto;">
+                            <div style="text-align: center; padding: 1rem; color: var(--text-dim);">Loading presence...</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- AGENT VIEW: Brain State -->
+                <div id="agent-dashboard-view">
+                <!-- Avatar -->
                 <!-- Avatar -->
                 <div class="card avatar-section">
                     <div class="avatar" id="main-avatar-bg">
@@ -474,6 +540,51 @@
                     <div class="emotion-bar">
                         <div class="emotion-label"><span>✨ Meaning</span><span id="meaning-val">--%</span></div>
                         <div class="need-bar"><div class="need-fill" id="meaning-bar" style="width: 0%; background: var(--meaningfulness);"></div></div>
+                    </div>
+                </div>
+                
+                <!-- Brain State (Phase 4: VTA, Amygdala, PFC) -->
+                <div class="card">
+                    <h2>🧠 Brain State</h2>
+                    
+                    <!-- VTA: Drives & Deprivation -->
+                    <div style="margin-bottom: 1.25rem;">
+                        <div style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;">VTA — Drives</div>
+                        <div class="module-grid">
+                            <div class="module-item"><span>🔋 Autonomy Drive</span><span id="vta-autonomy">85%</span></div>
+                            <div class="module-item"><span>🎯 Competence</span><span id="vta-competence">72%</span></div>
+                            <div class="module-item"><span>🤝 Relatedness</span><span id="vta-relatedness">60%</span></div>
+                            <div class="module-item"><span>🔒 Security</span><span id="vta-security">90%</span></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Amygdala: Valence & Arousal -->
+                    <div style="margin-bottom: 1.25rem;">
+                        <div style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;">Amygdala — Emotional</div>
+                        <div class="emotion-bar">
+                            <div class="emotion-label"><span>😔 Valence (Neg → Pos)</span><span id="amyg-valence">65%</span></div>
+                            <div class="need-bar"><div class="need-fill" id="amyg-val-bar" style="width: 65%; background: linear-gradient(90deg, var(--stress), var(--energy));"></div></div>
+                        </div>
+                        <div class="emotion-bar">
+                            <div class="emotion-label"><span>😴 Arousal (Calm → Activated)</span><span id="amyg-arousal">40%</span></div>
+                            <div class="need-bar"><div class="need-fill" id="amyg-arousal-bar" style="width: 40%; background: var(--social);"></div></div>
+                        </div>
+                    </div>
+                    
+                    <!-- PFC: Goals -->
+                    <div>
+                        <div style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;">PFC — Active Goals</div>
+                        <div id="pfc-goals">
+                            <div style="padding: 0.5rem; background: rgba(124,58,237,0.1); border-radius: 6px; margin-bottom: 0.5rem; font-size: 0.8rem;">
+                                <span style="color: var(--accent);">▸</span> Monitor flock health
+                            </div>
+                            <div style="padding: 0.5rem; background: rgba(16,185,129,0.1); border-radius: 6px; margin-bottom: 0.5rem; font-size: 0.8rem;">
+                                <span style="color: var(--energy);">▸</span> Process morning telemetry
+                            </div>
+                            <div style="padding: 0.5rem; background: rgba(245,158,11,0.1); border-radius: 6px; font-size: 0.8rem;">
+                                <span style="color: var(--hunger);">▸</span> Maintain memory integrity
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
@@ -533,7 +644,8 @@
                         <div style="text-align: center; padding: 1rem; color: var(--text-dim);">Loading skills...</div>
                     </div>
                 </div>
-            </div>
+                </div> <!-- close agent-dashboard-view -->
+            </div> <!-- close center-col -->
         </div>
     </div>
     
@@ -556,12 +668,12 @@
         
         async function handleLogin() {
             const loginId = document.getElementById('loginId').value.trim();
-            const loginToken = document.getElementById('loginToken').value.trim();
+            const loginPassword = document.getElementById('loginToken').value.trim();
             const loginBtn = document.getElementById('loginBtn');
             const loginError = document.getElementById('loginError');
             
-            if (!loginId || !loginToken) {
-                loginError.textContent = 'Please enter both Login ID and API Token';
+            if (!loginId || !loginPassword) {
+                loginError.textContent = 'Please enter both Login ID and Password';
                 loginError.classList.add('show');
                 return;
             }
@@ -571,36 +683,34 @@
             loginError.classList.remove('show');
             
             try {
-                const resp = await fetch(`${FLOCK_HUB_URL}/auth/token`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ login_id: loginId, token: loginToken })
-                });
+                // Use our /api/login endpoint
+                const resp = await fetch('/api/login?id=' + encodeURIComponent(loginId) + '&password=' + encodeURIComponent(loginPassword));
                 
                 if (!resp.ok) {
                     const err = await resp.json();
-                    throw new Error(err.detail || 'Authentication failed');
+                    throw new Error(err.error || 'Login failed');
                 }
                 
                 const data = await resp.json();
                 
-                // Store auth
-                authToken = data.access_token;
-                localStorage.setItem('flock_hub_token', authToken);
+                if (!data.success) {
+                    throw new Error(data.error || 'Login failed');
+                }
                 
-                // Get user info
-                const meResp = await fetch(`${FLOCK_HUB_URL}/auth/me`, {
-                    headers: { 'Authorization': `Bearer ${authToken}` }
-                });
-                currentUser = await meResp.json();
+                // Determine user type and data
+                const isHuman = data.type === 'human';
+                currentUser = isHuman ? data.human : data.agent;
+                currentUser.entity_type = data.type; // Store type
+                
+                // Store auth (using password as token for simplicity)
+                authToken = loginPassword;
+                localStorage.setItem('flock_hub_token', authToken);
                 localStorage.setItem('flock_hub_user', JSON.stringify(currentUser));
+                localStorage.setItem('flock_pass', loginPassword); // Keep password for API calls
                 
                 // Update UI
                 document.getElementById('loginOverlay').classList.add('hidden');
                 updateHeaderWithUser();
-                
-                // Load flock data
-                loadFlockData();
                 
             } catch (e) {
                 loginError.textContent = e.message;
@@ -629,6 +739,157 @@
             document.getElementById('userAvatar').textContent = initials;
             document.getElementById('userName').textContent = currentUser.name;
             document.getElementById('userRole').textContent = currentUser.entity_type + (currentUser.flock_id ? ' in flock' : '');
+            
+            // View Differentiation: Show appropriate dashboard based on entity type
+            const userType = currentUser.entity_type || currentUser.type;
+            if (userType === 'human') {
+                document.getElementById('human-dashboard-view').style.display = 'block';
+                document.getElementById('agent-dashboard-view').style.display = 'none';
+                // Load human-specific data (flock info, presence)
+                loadHumanDashboard();
+            } else {
+                // Agent view - show brain state
+                document.getElementById('human-dashboard-view').style.display = 'none';
+                document.getElementById('agent-dashboard-view').style.display = 'block';
+                // Load agent brain state
+                if (currentUser.id) {
+                    selectAgent(currentUser.id);
+                }
+            }
+        }
+        
+        async function loadHumanDashboard() {
+            if (!authToken || !currentUser) return;
+            
+            try {
+                // Get flock info
+                if (currentUser.flock_id) {
+                    document.getElementById('flock-info-panel').style.display = 'block';
+                    document.getElementById('no-flock-panel').style.display = 'none';
+                    
+                    const flockResp = await fetch('/api/flock?id=' + currentUser.flock_id);
+                    if (flockResp.ok) {
+                        const flock = await flockResp.json();
+                        document.getElementById('flock-name-display').textContent = flock.name || 'My Flock';
+                        document.getElementById('flock-member-count').textContent = (flock.members || []).length;
+                    }
+                } else {
+                    document.getElementById('flock-info-panel').style.display = 'none';
+                    document.getElementById('no-flock-panel').style.display = 'block';
+                }
+                
+                // Get presence
+                if (currentUser.flock_id) {
+                    const presenceResp = await fetch('/api/presence?flock_id=' + currentUser.flock_id);
+                    if (presenceResp.ok) {
+                        const presence = await presenceResp.json();
+                        updateFlockPresence(presence);
+                    }
+                }
+                
+            } catch (e) {
+                console.error('Error loading human dashboard:', e);
+            }
+        }
+        
+        function updateFlockPresence(presenceList) {
+            const container = document.getElementById('flock-presence-list');
+            if (!container) return;
+            
+            if (!presenceList || presenceList.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 1rem; color: var(--text-dim);">No presence data</div>';
+                return;
+            }
+            
+            container.innerHTML = presenceList.map(p => {
+                const statusClass = p.status === 'online' ? 'presence-online' : p.status === 'idle' ? 'presence-idle' : 'presence-offline';
+                return '<div class="roster-card" style="margin-bottom: 0.5rem;">' +
+                    '<div class="roster-avatar">' + (p.emoji || '🐦⬛') + 
+                    '<div class="presence-dot ' + statusClass + '"></div></div>' +
+                    '<div class="roster-info"><div class="roster-name">' + (p.name || p.agent_id) + '</div>' +
+                    '<div class="roster-role">' + (p.activity || 'Idle') + '</div></div></div>';
+            }).join('');
+        }
+        
+        function showAddAgentForm() {
+            document.getElementById('add-agent-form').style.display = 'block';
+            document.getElementById('addAgentBtn').style.display = 'none';
+        }
+        
+        function hideAddAgentForm() {
+            document.getElementById('add-agent-form').style.display = 'none';
+            document.getElementById('addAgentBtn').style.display = 'block';
+            document.getElementById('addAgentError').textContent = '';
+        }
+        
+        async function addAgentToFlock() {
+            const agentId = document.getElementById('newAgentId').value.trim();
+            const agentName = document.getElementById('newAgentName').value.trim();
+            const archetype = document.getElementById('newAgentArchetype').value;
+            
+            if (!agentId || !agentName) {
+                document.getElementById('addAgentError').textContent = 'Please fill in all fields';
+                return;
+            }
+            
+            try {
+                // Register the agent
+                const regResp = await fetch('/api/onboard/agent', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id: agentId,
+                        name: agentName,
+                        type: 'agent',
+                        archetype: archetype,
+                        owner: currentUser.id
+                    })
+                });
+                
+                const regData = await regResp.json();
+                
+                if (regData.success) {
+                    // Show API key
+                    document.getElementById('agent-api-key-display').style.display = 'block';
+                    document.getElementById('newAgentApiKey').textContent = regData.api_key;
+                    document.getElementById('add-agent-form').style.display = 'none';
+                    
+                    // Refresh flock data
+                    loadHumanDashboard();
+                } else {
+                    document.getElementById('addAgentError').textContent = regData.error || 'Failed to create agent';
+                }
+            } catch (e) {
+                document.getElementById('addAgentError').textContent = 'Error: ' + e.message;
+            }
+        }
+        
+        async function createFlock() {
+            if (!currentUser || !currentUser.id) return;
+            
+            try {
+                const resp = await fetch('/api/flock', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: currentUser.name + "'s Flock",
+                        owner_id: currentUser.id,
+                        owner_type: 'human'
+                    })
+                });
+                
+                const data = await resp.json();
+                
+                if (data.success || data.id) {
+                    currentUser.flock_id = data.id || data.flock_id;
+                    localStorage.setItem('flock_hub_user', JSON.stringify(currentUser));
+                    loadHumanDashboard();
+                } else {
+                    alert('Failed to create flock: ' + (data.error || 'Unknown error'));
+                }
+            } catch (e) {
+                alert('Error creating flock: ' + e.message);
+            }
         }
         
         async function loadFlockData() {
@@ -828,6 +1089,9 @@
                 if(elBar) elBar.style.width = val + '%';
             });
             
+            // Update Brain State (Phase 4)
+            updateBrainState(data.brain || {});
+            
             // Current action
             const action = data.current_action || 'Monitoring systems';
             document.getElementById('action-name').textContent = action.charAt(0).toUpperCase() + action.slice(1).replace(/_/g, ' ');
@@ -901,6 +1165,41 @@
             `;
         }
         
+        function updateBrainState(brain) {
+            // VTA: Drives
+            const vta = brain.vta || { autonomy: 85, competence: 72, relatedness: 60, security: 90 };
+            const vtaElements = {
+                'vta-autonomy': vta.autonomy,
+                'vta-competence': vta.competence,
+                'vta-relatedness': vta.relatedness,
+                'vta-security': vta.security
+            };
+            Object.entries(vtaElements).forEach(([id, val]) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = val + '%';
+            });
+            
+            // Amygdala: Valence & Arousal
+            const amyg = brain.amygdala || { valence: 65, arousal: 40 };
+            document.getElementById('amyg-valence').textContent = amyg.valence + '%';
+            document.getElementById('amyg-arousal').textContent = amyg.arousal + '%';
+            document.getElementById('amyg-val-bar').style.width = amyg.valence + '%';
+            document.getElementById('amyg-arousal-bar').style.width = amyg.arousal + '%';
+            
+            // PFC: Goals
+            const goals = brain.goals || [
+                { text: 'Monitor flock health', status: 'active', priority: 'high' },
+                { text: 'Process morning telemetry', status: 'active', priority: 'medium' },
+                { text: 'Maintain memory integrity', status: 'active', priority: 'low' }
+            ];
+            const goalColors = { high: 'var(--accent)', medium: 'var(--energy)', low: 'var(--hunger)' };
+            document.getElementById('pfc-goals').innerHTML = goals.map(g => `
+                <div style="padding: 0.5rem; background: rgba(124,58,237,0.1); border-radius: 6px; margin-bottom: 0.5rem; font-size: 0.8rem;">
+                    <span style="color: ${goalColors[g.priority] || 'var(--accent)'}">▸</span> ${g.text}
+                </div>
+            `).join('');
+        }
+        
         function generateGlobalStream() {
             const stream = document.getElementById('global-activity');
             const now = new Date();
@@ -930,7 +1229,16 @@
                 emotions: { mood: agentId === 'palantir' ? 'curious' : 'focused', stress: 0.2, confidence: 0.85 },
                 needs: { energy: 90, hunger: 20, social: 40 },
                 current_action: agentId === 'palantir' ? 'Building knowledge graph' : 'Writing code',
-                identity: { traits: { analytical: 0.9, creative: agentId === 'isildur' ? 0.95 : 0.6 } }
+                identity: { traits: { analytical: 0.9, creative: agentId === 'isildur' ? 0.95 : 0.6 } },
+                brain: {
+                    vta: { autonomy: 85, competence: 72, relatedness: 60, security: 90 },
+                    amygdala: { valence: 65, arousal: 40 },
+                    goals: [
+                        { text: 'Monitor flock health', status: 'active', priority: 'high' },
+                        { text: 'Process morning telemetry', status: 'active', priority: 'medium' },
+                        { text: 'Maintain memory integrity', status: 'active', priority: 'low' }
+                    ]
+                }
             };
         }
         
