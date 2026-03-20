@@ -41,6 +41,50 @@ function getDefaultState() {
       { name: "Narrative Construction", level: "★★☆", category: "creative" },
       { name: "System Monitoring", level: "★★★", category: "technical" }
     ],
+    // Brain State (6 regions)
+    brain: {
+      // VTA - Motivation drives
+      vta: {
+        energy: 75,
+        purpose: 60,
+        curiosity: 80,
+        motivation: 70
+      },
+      // Amygdala - Emotional state
+      amygdala: {
+        mood: "calm",
+        valence: 0.6,  // -1 to 1
+        arousal: 0.4,   // 0 to 1
+        fear: 0.1,
+        anger: 0.05
+      },
+      // PFC - Planning and goals
+      pfc: {
+        workingMemory: 85,
+        attention: 70,
+        planning: 65,
+        reasoning: 75
+      },
+      // Hippocampus - Memory
+      hippocampus: {
+        consolidationScore: 90,
+        memoryStrength: 78,
+        lastConsolidation: null,
+        episodicRetention: 82
+      },
+      // Basal Ganglia - Habits
+      basalGanglia: {
+        habitStrength: 65,
+        automaticBehaviors: 12,
+        actionSelection: 70
+      },
+      // Nucleus Accumbens - Reward
+      nucleusAccumbens: {
+        rewardPrediction: 0.55,
+        expectedReward: 0.6,
+        dopamineLevel: 0.5
+      }
+    },
     stats: {},
     goals: [],
     action_history: [],
@@ -937,6 +981,9 @@ async function loadVisualizations() {
     const statusResp = await fetch('/api/status');
     const state = await statusResp.json();
     
+    // Load brain state visualization
+    loadBrainState(state.brain || {});
+    
     // Load mood history chart
     loadMoodHistory(state.action_history || []);
     
@@ -1000,6 +1047,49 @@ async function loadHumanVisualizations() {
     
   } catch(e) {
     console.error('Error loading human visualizations:', e);
+  }
+}
+
+function loadBrainState(brain) {
+  // VTA - Average of motivation drives
+  if (brain.vta) {
+    const vta = (brain.vta.energy + brain.vta.purpose + brain.vta.curiosity + brain.vta.motivation) / 4;
+    const vtaFill = document.getElementById('vtaFill');
+    if (vtaFill) vtaFill.style.height = vta + '%';
+  }
+  
+  // Amygdala - Mood display
+  if (brain.amygdala) {
+    const moodEl = document.getElementById('amygdalaMood');
+    if (moodEl) moodEl.textContent = brain.amygdala.mood || 'neutral';
+  }
+  
+  // PFC - Planning/attention
+  if (brain.pfc) {
+    const pfc = (brain.pfc.workingMemory + brain.pfc.planning + brain.pfc.attention) / 3;
+    const pfcFill = document.getElementById('pfcFill');
+    if (pfcFill) pfcFill.style.height = pfc + '%';
+  }
+  
+  // Hippocampus - Memory
+  if (brain.hippocampus) {
+    const hippo = brain.hippocampus.memoryStrength || brain.hippocampus.consolidationScore || 50;
+    const hippoFill = document.getElementById('hippoFill');
+    if (hippoFill) hippoFill.style.height = hippo + '%';
+  }
+  
+  // Basal Ganglia - Habits
+  if (brain.basalGanglia) {
+    const bg = brain.basalGanglia.habitStrength || 50;
+    const bgFill = document.getElementById('bgFill');
+    if (bgFill) bgFill.style.height = bg + '%';
+  }
+  
+  // Nucleus Accumbens - Reward
+  if (brain.nucleusAccumbens) {
+    const nac = ((brain.nucleusAccumbens.rewardPrediction || 0.5) + (brain.nucleusAccumbens.dopamineLevel || 0.5)) * 50;
+    const nacFill = document.getElementById('nacFill');
+    if (nacFill) nacFill.style.height = nac + '%';
   }
 }
 
