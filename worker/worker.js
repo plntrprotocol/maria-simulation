@@ -594,6 +594,54 @@ body { font-family: 'Space Grotesk', sans-serif; background: linear-gradient(135
         <div style="color:#666;text-align:center;padding:20px;">Loading...</div>
       </div>
     </div>
+    
+    <!-- Visualizations -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;margin-top:20px;">
+      <!-- Mood History -->
+      <div class="card">
+        <h2 style="margin-bottom:15px;">📈 Mood History</h2>
+        <div id="moodChart" style="height:150px;display:flex;align-items:flex-end;gap:4px;padding:10px;">
+          <div style="color:#666;text-align:center;width:100%;">Loading...</div>
+        </div>
+      </div>
+      
+      <!-- Trait Radar -->
+      <div class="card">
+        <h2 style="margin-bottom:15px;">🎯 Traits</h2>
+        <div id="traitRadar" style="height:150px;">
+          <div style="display:flex;justify-content:space-around;align-items:center;height:100%;">
+            <div style="text-align:center;">
+              <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#10b981,#059669);display:flex;align-items:center;justify-content:center;margin:0 auto 5px;">🧠</div>
+              <div style="font-size:10px;color:#888;">Focus</div>
+            </div>
+            <div style="text-align:center;">
+              <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#2563eb);display:flex;align-items:center;justify-content:center;margin:0 auto 5px;">💪</div>
+              <div style="font-size:10px;color:#888;">Energy</div>
+            </div>
+            <div style="text-align:center;">
+              <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#a855f7,#7c3aed);display:flex;align-items:center;justify-content:center;margin:0 auto 5px;">❤️</div>
+              <div style="font-size:10px;color:#888;">Social</div>
+            </div>
+            <div style="text-align:center;">
+              <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#ec4899,#db2777);display:flex;align-items:center;justify-content:center;margin:0 auto 5px;">🎮</div>
+              <div style="font-size:10px;color:#888;">Fun</div>
+            </div>
+            <div style="text-align:center;">
+              <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#d97706);display:flex;align-items:center;justify-content:center;margin:0 auto 5px;">😌</div>
+              <div style="font-size:10px;color:#888;">Calm</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Skills -->
+      <div class="card">
+        <h2 style="margin-bottom:15px;">🛠️ Skills</h2>
+        <div id="skillsList" style="max-height:150px;overflow-y:auto;">
+          <div style="color:#666;text-align:center;padding:20px;">Loading...</div>
+        </div>
+      </div>
+    </div>
   </div>
   
   <div class="grid" id="flockDashboard" style="display:none;">
@@ -673,6 +721,7 @@ async function loadFlock() {
         document.getElementById('agentFlockId').textContent = 'Not in a flock';
       }
       loadActionHistory();
+      loadVisualizations();
       return;
     }
     
@@ -822,6 +871,85 @@ async function loadActionHistory() {
   } catch(e) {
     console.error('Error loading action history:', e);
   }
+}
+
+// Load Visualizations
+async function loadVisualizations() {
+  try {
+    const statusResp = await fetch('/api/status');
+    const state = await statusResp.json();
+    
+    // Load mood history chart
+    loadMoodHistory(state.action_history || []);
+    
+    // Load traits display (from needs/emotions)
+    loadTraits(state);
+    
+    // Load skills
+    loadSkills(state.skills || []);
+  } catch(e) {
+    console.error('Error loading visualizations:', e);
+  }
+}
+
+function loadMoodHistory(actionHistory) {
+  const container = document.getElementById('moodChart');
+  if (!container) return;
+  
+  // Filter mood-related actions and take last 7
+  const moodActions = actionHistory
+    .filter(a => a.action === 'set_mood')
+    .slice(0, 7)
+    .reverse();
+  
+  if (moodActions.length === 0) {
+    container.innerHTML = '<div style="color:#666;text-align:center;width:100%;">No mood data yet</div>';
+    return;
+  }
+  
+  const moodColors = {
+    'happy': '#10b981',
+    'calm': '#3b82f6',
+    'focused': '#a855f7',
+    'tired': '#f59e0b',
+    'anxious': '#ef4444',
+    'neutral': '#6b7280'
+  };
+  
+  container.innerHTML = moodActions.map(a => {
+    const mood = a.parameters?.mood || 'neutral';
+    const color = moodColors[mood] || moodColors.neutral;
+    return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;">' +
+      '<div style="width:100%;background:' + color + ';border-radius:4px;min-height:20px;height:40px;"></div>' +
+      '<div style="font-size:8px;color:#888;margin-top:4px;">' + (mood.charAt(0).toUpperCase()) + '</div>' +
+      '</div>';
+  }).join('');
+}
+
+function loadTraits(state) {
+  // Traits are shown via colors on the circles - update based on current state
+  const needs = state.needs || {};
+  const emotions = state.emotions || {};
+  
+  // Update trait circles with current values (just visual for now)
+  console.log('Traits loaded - Energy:', needs.energy, 'Focus:', needs.purpose);
+}
+
+function loadSkills(skills) {
+  const container = document.getElementById('skillsList');
+  if (!container) return;
+  
+  if (!skills || skills.length === 0) {
+    container.innerHTML = '<div style="color:#666;text-align:center;padding:20px;">No skills yet</div>';
+    return;
+  }
+  
+  container.innerHTML = skills.map(skill => 
+    '<div style="padding:8px;background:#1a1a2e;border-radius:6px;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center;">' +
+    '<span>' + (skill.name || skill) + '</span>' +
+    '<span style="color:#a855f7;font-size:12px;">' + (skill.level || '★') + '</span>' +
+    '</div>'
+  ).join('');
 }
 
 async function createFlock() {
