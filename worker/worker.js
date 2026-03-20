@@ -260,7 +260,7 @@ async function onboardHuman(data) {
     id, 
     name, 
     email: email || "", 
-    password_hash: simpleHash(password),
+    password: password,  // Simple storage for demo
     agents: [], 
     flock_id: null, 
     api_key,
@@ -274,7 +274,8 @@ async function onboardHuman(data) {
 async function verifyHumanPassword(id, password) {
   const human = await getHuman(id);
   if (!human) return null;
-  if (human.password_hash && verifySimpleHash(password, human.password_hash)) {
+  // Simple direct comparison for demo - store password directly
+  if (human.password === password) {
     return human;
   }
   return null;
