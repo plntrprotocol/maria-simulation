@@ -641,6 +641,15 @@ body { font-family: 'Space Grotesk', sans-serif; background: linear-gradient(135
         </div>
       </div>
       
+      <!-- Manual State Override -->
+      <div class="card" style="margin-top:20px;">
+        <h2 style="margin-bottom:15px;">⚙️ State Override</h2>
+        <p style="color:#888;font-size:12px;margin-bottom:15px;">Directly edit Maria's state (JSON)</p>
+        <textarea id="stateJson" style="width:100%;height:120px;background:#1a1a2e;border:1px solid #2a2a4a;border-radius:8px;color:#10b981;font-family:monospace;font-size:12px;padding:10px;" placeholder='{"needs":{"energy":80},"emotions":{"mood":"happy"}}'></textarea>
+        <button class="btn" onclick="applyStateOverride()" style="padding:10px;font-size:12px;margin-top:10px;">Apply State</button>
+        <div id="stateOverrideResponse" style="display:none;margin-top:10px;padding:10px;background:rgba(16,185,129,0.1);border-radius:6px;font-size:12px;"></div>
+      </div>
+      
       <!-- Skills -->
       <div class="card">
         <h2 style="margin-bottom:15px;">🛠️ Skills</h2>
@@ -1194,6 +1203,49 @@ async function generateToken() {
     }
   } catch(e) {
     alert('Error creating token');
+  }
+}
+
+async function applyStateOverride() {
+  const jsonStr = document.getElementById('stateJson').value.trim();
+  if (!jsonStr) {
+    alert('Please enter JSON');
+    return;
+  }
+  
+  try {
+    const newState = JSON.parse(jsonStr);
+    
+    // Get current state and merge
+    const currentResp = await fetch('/api/status');
+    const currentState = await currentResp.json();
+    
+    // Merge new state into current
+    const merged = { ...currentState, ...newState };
+    
+    // Apply via sync endpoint
+    const resp = await fetch('/api/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(merged)
+    });
+    
+    const result = await resp.json();
+    
+    const responseDiv = document.getElementById('stateOverrideResponse');
+    responseDiv.style.display = 'block';
+    if (result.status === 'synced') {
+      responseDiv.style.background = 'rgba(16,185,129,0.1)';
+      responseDiv.innerHTML = '✓ State applied successfully!';
+      loadVisualizations();
+    } else {
+      responseDiv.style.background = 'rgba(239,68,68,0.1)';
+      responseDiv.innerHTML = '✗ Error: ' + (result.error || 'Failed');
+    }
+    
+    setTimeout(() => { responseDiv.style.display = 'none'; }, 3000);
+  } catch(e) {
+    alert('Invalid JSON: ' + e.message);
   }
 }
 
