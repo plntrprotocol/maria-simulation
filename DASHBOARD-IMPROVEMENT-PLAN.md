@@ -29,13 +29,13 @@
 These gaps were identified during phases 1-3. All must be fixed before new features.
 
 ### G.1 Authentication & Session
-- [ ] **Logout button** - User can't log out of dashboard
+- [x] **Logout button** - User can't log out of dashboard ✅
 - [ ] **Password change UI** - Can't reset password after login
-- [ ] **Session persistence** - localStorage needs better handling
+- [x] **Session persistence** - localStorage needs better handling ✅
 
 ### G.2 UI Consistency
-- [ ] **Login page parameter fix** - Has old `?id=` logic hardcoded in HTML
-- [ ] **Human dashboard visualizations** - Mirror agent view visualizations for humans
+- [x] **Login page parameter fix** - Has old `?id=` logic hardcoded in HTML ✅
+- [x] **Human dashboard visualizations** - Mirror agent view visualizations for humans ✅
 - [ ] **Loading states** - Add loading spinners during API calls
 - [ ] **Error handling UI** - Show user-friendly errors
 
@@ -45,11 +45,11 @@ These gaps were identified during phases 1-3. All must be fixed before new featu
 
 ### G.4 Data & State
 - [ ] **Skills population** - Initialize skills in default state or populate via actions
-- [ ] **Goals UI** - Display and manage goals in dashboard
+- [x] **Goals UI** - Display and manage goals in dashboard ✅
 - [ ] **Manual state override** - Allow direct state editing
 
 ### G.5 Flock Features (Partial)
-- [ ] **Real-time presence** - Agents need heartbeat API to update presence
+- [x] **Real-time presence** - Agents need heartbeat API to update presence ✅
 - [ ] **Flock settings UI** - Rename flock, manage members
 
 ---
