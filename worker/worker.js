@@ -682,6 +682,15 @@ body { font-family: 'Space Grotesk', sans-serif; background: linear-gradient(135
       </div>
       
       <div style="margin-top:20px;padding-top:15px;border-top:1px solid #2a2a4a;">
+        <h3 style="font-size:12px;color:#a855f7;text-transform:uppercase;margin-bottom:10px;">Generate API Token</h3>
+        <div style="display:grid;gap:10px;">
+          <input type="text" id="tokenName" placeholder="Token name (e.g., My App)" style="padding:10px;background:#1a1a2e;border:1px solid #2a2a4a;border-radius:8px;color:white;">
+          <button class="btn" onclick="generateToken()" style="padding:10px;font-size:12px;">Generate Token</button>
+          <div id="tokenDisplay" style="display:none;padding:10px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:6px;font-size:12px;word-break:break-all;"></div>
+        </div>
+      </div>
+      
+      <div style="margin-top:20px;padding-top:15px;border-top:1px solid #2a2a4a;">
         <h3 style="font-size:12px;color:#a855f7;text-transform:uppercase;margin-bottom:10px;">Create New Agent</h3>
         <div style="display:grid;gap:10px;">
           <input type="text" id="createAgentId" placeholder="Agent ID (e.g. sentinel)" style="padding:10px;background:#1a1a2e;border:1px solid #2a2a4a;border-radius:8px;color:white;">
@@ -1154,6 +1163,37 @@ async function changePassword() {
     setTimeout(() => { responseDiv.style.display = 'none'; }, 3000);
   } catch(e) {
     alert('Error changing password');
+  }
+}
+
+async function generateToken() {
+  const tokenName = document.getElementById('tokenName').value.trim();
+  if (!tokenName) {
+    alert('Please enter a token name');
+    return;
+  }
+  
+  try {
+    const resp = await fetch('/api/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        flock_id: window.currentFlockId, 
+        name: tokenName,
+        entity_id: userId
+      })
+    });
+    const data = await resp.json();
+    
+    if (data.success) {
+      const display = document.getElementById('tokenDisplay');
+      display.style.display = 'block';
+      display.innerHTML = '<strong style="color:#10b981;">Token Created!</strong><br>Token: <code style="color:#a855f7;">' + data.token.token + '</code><br><span style="color:#888;">Save this! It will not be shown again.</span>';
+    } else {
+      alert('Error: ' + (data.error || 'Failed to create token'));
+    }
+  } catch(e) {
+    alert('Error creating token');
   }
 }
 
