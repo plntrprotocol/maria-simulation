@@ -1910,10 +1910,29 @@ async function handleRequest(request) {
       const body = await request.json();
       const { agent_id, action, parameters } = body;
       
-      if (!agent_id || !action) {
-        return new Response(JSON.stringify({ success: false, error: "agent_id and action required" }), { 
+      // Graceful validation
+      if (!agent_id) {
+        return new Response(JSON.stringify({ success: false, error: "agent_id is required" }), { 
           status: 400, headers: { "Content-Type": "application/json", ...cors } 
         });
+      }
+      
+      if (!action) {
+        return new Response(JSON.stringify({ success: false, error: "action is required. Valid actions: set_mood, update_needs, set_activity, add_goal, complete_goal" }), { 
+          status: 400, headers: { "Content-Type": "application/json", ...cors } 
+        });
+      }
+      
+      // Agent existence check - verify agent exists
+      let agent = await getAgent(agent_id);
+      if (!agent) {
+        // Try to find in humans or create minimal record
+        let human = await getHuman(agent_id);
+        if (!human) {
+          return new Response(JSON.stringify({ success: false, error: "Agent not found: " + agent_id }), { 
+            status: 404, headers: { "Content-Type": "application/json", ...cors } 
+          });
+        }
       }
       
       // Get current state
