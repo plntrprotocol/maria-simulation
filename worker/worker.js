@@ -745,10 +745,10 @@ async function handleRequest(request) {
     
     // First try human with password
     if (password) {
-      const human = await verifyHumanPassword(userId, password);
-      if (human) { human = await ensureApiKey(human, "human"); human = await ensureApiKey(human, "human"); return new Response(JSON.stringify({ success: true, human, type: "human" }), { headers: { "Content-Type": "application/json", ...cors } }); }
+      let human = await verifyHumanPassword(userId, password);
+      if (human) { human = await ensureApiKey(human, "human"); return new Response(JSON.stringify({ success: true, human, type: "human" }), { headers: { "Content-Type": "application/json", ...cors } }); }
       // If password provided but wrong
-      const existingHuman = await getHuman(userId);
+      let existingHuman = await getHuman(userId);
       if (existingHuman && !existingHuman.password_hash) {
         // No password set - set it now
         existingHuman.password_hash = simpleHash(password);
@@ -759,14 +759,14 @@ async function handleRequest(request) {
     }
     
     // No password - allow legacy login (for humans without password) or agents
-    const human = await getHuman(userId);
+    let human = await getHuman(userId);
     if (human) {
       if (human.password_hash) {
         return new Response(JSON.stringify({ error: "Password required" }), { status: 401, headers: { "Content-Type": "application/json", ...cors } });
       }
       human = await ensureApiKey(human, "human"); return new Response(JSON.stringify({ success: true, human, type: "human" }), { headers: { "Content-Type": "application/json", ...cors } });
     }
-    const agent = await getAgent(userId);
+    let agent = await getAgent(userId);
     if (agent) { agent = await ensureApiKey(agent, "agent"); return new Response(JSON.stringify({ success: true, agent, type: "agent" }), { headers: { "Content-Type": "application/json", ...cors } }); }
     return new Response(JSON.stringify({ error: "User not found" }), { status: 404, headers: { "Content-Type": "application/json", ...cors } });
   }
