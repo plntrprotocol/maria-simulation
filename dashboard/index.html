@@ -812,11 +812,10 @@
             loginError.classList.remove('show');
             
             try {
-                // Use our /api/login endpoint - detect if this looks like an agent ID (has suffix like -main) or human
-                const isAgent = loginId.includes('-') || loginId === loginId.toLowerCase();
-                const url = isAgent 
-                    ? '/api/login?agent=' + encodeURIComponent(loginId)
-                    : '/api/login?user=' + encodeURIComponent(loginId) + '&password=' + encodeURIComponent(loginPassword);
+                // Use our /api/login endpoint - if password provided, use human login
+                const url = loginPassword.trim() !== ''
+                    ? '/api/login?user=' + encodeURIComponent(loginId) + '&password=' + encodeURIComponent(loginPassword)
+                    : '/api/login?agent=' + encodeURIComponent(loginId);
                 
                 const resp = await fetch(url);
                 
