@@ -40,8 +40,8 @@ These gaps were identified during phases 1-3. All must be fixed before new featu
 - [x] **Error handling UI** - Show user-friendly errors ✅
 
 ### G.3 Backend Validation
-- [ ] **Action API validation** - Make parameter validation more graceful
-- [ ] **Agent existence check** - Verify agent_id exists before recording actions
+- [x] **Action API validation** - Make parameter validation more graceful ✅
+- [x] **Agent existence check** - Verify agent_id exists before recording actions ✅
 
 ### G.4 Data & State
 - [x] **Skills population** - Initialize skills in default state or populate via actions ✅
