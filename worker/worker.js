@@ -86,7 +86,32 @@ async function onboardAgent(data) {
   if (!id || !name) return { success: false, error: "id and name required" };
   const existing = await getAgent(id);
   if (existing) return { success: false, error: "Agent already exists" };
+  
   const api_key = generateApiKey();
+  let flock_id = null;
+  
+  // Auto-link to owner's flock if owner is provided
+  if (owner) {
+    const humanOwner = await getHuman(owner);
+    if (humanOwner && humanOwner.flock_id) {
+      flock_id = humanOwner.flock_id;
+      // Add agent to the flock's member list
+      const flock = await getFlock(flock_id);
+      if (flock) {
+        const isMember = flock.members.find(m => m.id === id);
+        if (!isMember) {
+          flock.members.push({
+            id: id,
+            type: "agent",
+            role: "member",
+            joined_at: new Date().toISOString()
+          });
+          await saveFlock(flock);
+        }
+      }
+    }
+  }
+
   const agent = { 
     id, name, 
     type: type || "general", 
@@ -96,10 +121,11 @@ async function onboardAgent(data) {
     status: "online", 
     public: true, 
     onboarding_complete: true, 
-    flock_id: null,
+    flock_id: flock_id,
     api_key,
     registered_at: new Date().toISOString() 
   };
+  
   await saveAgent(agent);
   await MARIA_STATE.put("apikey:" + api_key, JSON.stringify({ id, type: "agent" }));
   return { success: true, agent, api_key };
