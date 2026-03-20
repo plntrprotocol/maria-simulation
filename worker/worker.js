@@ -221,36 +221,32 @@ function verifyPassword(password, storedHash) {
 
 // Simple synchronous hash for backward compatibility (with salt)
 function simpleHash(str) {
-  // Generate random salt
-  let salt = '';
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  for (let i = 0; i < 16; i++) {
-    salt += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  // Simple but salted hash
+  // Use fixed salt for consistent hashing (for demo purposes)
+  // In production, use a proper bcrypt/argon2
+  const FIXED_SALT = "FlockHub2026";
+  
+  // Simple hash with fixed salt
   let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
+  const salted = FIXED_SALT + str;
+  for (let i = 0; i < salted.length; i++) {
+    const char = salted.charCodeAt(i);
     hash = ((hash << 5) - hash) + char;
     hash = hash & hash;
   }
-  return salt + ':' + (hash >>> 0).toString(16).padStart(8, '0');
+  return (hash >>> 0).toString(16);
 }
 
 function verifySimpleHash(password, storedHash) {
-  if (!storedHash || !storedHash.includes(':')) return false;
-  const parts = storedHash.split(':');
-  const salt = parts[0];
-  const originalHash = parts[1];
-  
+  // Verify using the same fixed salt approach
+  const FIXED_SALT = "FlockHub2026";
   let hash = 0;
-  for (let i = 0; i < password.length; i++) {
-    const char = password.charCodeAt(i);
+  const salted = FIXED_SALT + password;
+  for (let i = 0; i < salted.length; i++) {
+    const char = salted.charCodeAt(i);
     hash = ((hash << 5) - hash) + char;
     hash = hash & hash;
   }
-  const computedHash = (hash >>> 0).toString(16).padStart(8, '0');
-  return computedHash === originalHash;
+  return (hash >>> 0).toString(16) === storedHash;
 }
 
 async function onboardHuman(data) {
@@ -278,13 +274,7 @@ async function onboardHuman(data) {
 async function verifyHumanPassword(id, password) {
   const human = await getHuman(id);
   if (!human) return null;
-  if (human.password_hash && human.password_hash.includes(':')) {
-    // New salted hash format
-    if (verifySimpleHash(password, human.password_hash)) {
-      return human;
-    }
-  } else if (human.password_hash === simpleHash(password)) {
-    // Legacy format - still works
+  if (human.password_hash && verifySimpleHash(password, human.password_hash)) {
     return human;
   }
   return null;
