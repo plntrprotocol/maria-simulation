@@ -497,6 +497,65 @@
                             <div style="text-align: center; padding: 1rem; color: var(--text-dim);">Loading presence...</div>
                         </div>
                     </div>
+                    
+                    <!-- Human View: Selected Agent's Brain State -->
+                    <div id="human-agent-detail" style="display: none;">
+                        <!-- Emotional State -->
+                        <div class="card emotion-card">
+                            <h2>🧠 Agent Emotional State</h2>
+                            <div class="mood-display">
+                                <span class="mood-emoji" id="human-mood-emoji">😐</span>
+                                <div class="mood-label" id="human-mood-label">Neutral</div>
+                                <div class="mood-narrative" id="human-mood-narrative">Loading...</div>
+                            </div>
+                            <div class="emotion-bar">
+                                <div class="emotion-label"><span>😰 Stress</span><span id="human-stress-val">--%</span></div>
+                                <div class="need-bar"><div class="need-fill" id="human-stress-bar" style="width: 0%; background: var(--stress);"></div></div>
+                            </div>
+                            <div class="emotion-bar">
+                                <div class="emotion-label"><span>💪 Confidence</span><span id="human-confidence-val">--%</span></div>
+                                <div class="need-bar"><div class="need-fill" id="human-confidence-bar" style="width: 0%; background: var(--confidence);"></div></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Brain State -->
+                        <div class="card">
+                            <h2>🧠 Brain State</h2>
+                            <div style="margin-bottom: 1rem;">
+                                <div style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 0.5rem; text-transform: uppercase;">VTA — Drives</div>
+                                <div class="module-grid">
+                                    <div class="module-item"><span>🔋 Autonomy</span><span id="human-vta-autonomy">--%</span></div>
+                                    <div class="module-item"><span>🎯 Competence</span><span id="human-vta-competence">--%</span></div>
+                                    <div class="module-item"><span>🤝 Relatedness</span><span id="human-vta-relatedness">--%</span></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 0.5rem; text-transform: uppercase;">PFC — Goals</div>
+                                <div id="human-pfc-goals">
+                                    <div style="text-align: center; padding: 1rem; color: var(--text-dim);">Select an agent to view goals</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Needs -->
+                        <div class="card">
+                            <h2>📊 Agent Needs</h2>
+                            <div class="need">
+                                <div class="need-header">
+                                    <div class="need-label"><div class="need-icon" style="background: var(--energy)">⚡</div><span>Energy</span></div>
+                                    <span id="human-energy-val">--%</span>
+                                </div>
+                                <div class="need-bar"><div class="need-fill" id="human-energy-bar" style="width: 0%; background: var(--energy);"></div></div>
+                            </div>
+                            <div class="need">
+                                <div class="need-header">
+                                    <div class="need-label"><div class="need-icon" style="background: var(--hunger)">🍽</div><span>Processing</span></div>
+                                    <span id="human-hunger-val">--%</span>
+                                </div>
+                                <div class="need-bar"><div class="need-fill" id="human-hunger-bar" style="width: 0%; background: var(--hunger);"></div></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 
                 <!-- AGENT VIEW: Brain State -->
@@ -683,8 +742,13 @@
             loginError.classList.remove('show');
             
             try {
-                // Use our /api/login endpoint
-                const resp = await fetch('/api/login?id=' + encodeURIComponent(loginId) + '&password=' + encodeURIComponent(loginPassword));
+                // Use our /api/login endpoint - detect if this looks like an agent ID (has suffix like -main) or human
+                const isAgent = loginId.includes('-') || loginId === loginId.toLowerCase();
+                const url = isAgent 
+                    ? '/api/login?agent=' + encodeURIComponent(loginId)
+                    : '/api/login?user=' + encodeURIComponent(loginId) + '&password=' + encodeURIComponent(loginPassword);
+                
+                const resp = await fetch(url);
                 
                 if (!resp.ok) {
                     const err = await resp.json();
@@ -803,12 +867,73 @@
             
             container.innerHTML = presenceList.map(p => {
                 const statusClass = p.status === 'online' ? 'presence-online' : p.status === 'idle' ? 'presence-idle' : 'presence-offline';
-                return '<div class="roster-card" style="margin-bottom: 0.5rem;">' +
+                const agentId = p.agent_id || 'maria';
+                return '<div class="roster-card" style="margin-bottom: 0.5rem;" onclick="viewAgentAsHuman(\'' + agentId + '\')">' +
                     '<div class="roster-avatar">' + (p.emoji || '🐦⬛') + 
                     '<div class="presence-dot ' + statusClass + '"></div></div>' +
                     '<div class="roster-info"><div class="roster-name">' + (p.name || p.agent_id) + '</div>' +
                     '<div class="roster-role">' + (p.activity || 'Idle') + '</div></div></div>';
             }).join('');
+        }
+        
+        async function viewAgentAsHuman(agentId) {
+            // Show the agent detail section
+            document.getElementById('human-agent-detail').style.display = 'block';
+            
+            // Highlight selected agent in presence list
+            document.querySelectorAll('#flock-presence-list .roster-card').forEach(card => {
+                card.classList.remove('active');
+                if (card.textContent.includes(agentId)) card.classList.add('active');
+            });
+            
+            // Load agent state
+            try {
+                const resp = await fetch('/api/status?agent=' + agentId);
+                if (resp.ok) {
+                    const data = await resp.json();
+                    updateHumanAgentView(data);
+                }
+            } catch (e) {
+                console.error('Error loading agent state:', e);
+            }
+        }
+        
+        function updateHumanAgentView(data) {
+            const emotions = data.emotions || {};
+            const needs = data.needs || {};
+            const brain = data.brain || {};
+            
+            // Mood
+            const mood = emotions.mood || 'neutral';
+            document.getElementById('human-mood-emoji').textContent = moodEmojis[mood] || '😐';
+            document.getElementById('human-mood-label').textContent = mood.charAt(0).toUpperCase() + mood.slice(1);
+            document.getElementById('human-mood-narrative').textContent = emotions.narrative || 'No narrative available';
+            
+            // Emotions
+            const stress = Math.round((emotions.stress || 0.2) * 100);
+            const confidence = Math.round((emotions.confidence || 0.5) * 100);
+            document.getElementById('human-stress-val').textContent = stress + '%';
+            document.getElementById('human-stress-bar').style.width = stress + '%';
+            document.getElementById('human-confidence-val').textContent = confidence + '%';
+            document.getElementById('human-confidence-bar').style.width = confidence + '%';
+            
+            // VTA
+            const vta = brain.vta || {};
+            document.getElementById('human-vta-autonomy').textContent = (vta.autonomy || '--') + '%';
+            document.getElementById('human-vta-competence').textContent = (vta.competence || '--') + '%';
+            document.getElementById('human-vta-relatedness').textContent = (vta.relatedness || '--') + '%';
+            
+            // Goals
+            const goals = brain.goals || [];
+            document.getElementById('human-pfc-goals').innerHTML = goals.length > 0 ? goals.map(g => 
+                '<div style="padding: 0.5rem; background: rgba(124,58,237,0.1); border-radius: 6px; margin-bottom: 0.5rem; font-size: 0.8rem;">▸ ' + g.text + '</div>'
+            ).join('') : '<div style="text-align: center; padding: 1rem; color: var(--text-dim);">No active goals</div>';
+            
+            // Needs
+            document.getElementById('human-energy-val').textContent = (needs.energy || '--') + '%';
+            document.getElementById('human-energy-bar').style.width = (needs.energy || 0) + '%';
+            document.getElementById('human-hunger-val').textContent = (needs.hunger || '--') + '%';
+            document.getElementById('human-hunger-bar').style.width = (needs.hunger || 0) + '%';
         }
         
         function showAddAgentForm() {
