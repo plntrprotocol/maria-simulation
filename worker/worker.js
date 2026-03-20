@@ -219,34 +219,47 @@ function verifyPassword(password, storedHash) {
   return hashPassword(password, salt).then(h => h.split(':')[1] === originalHash);
 }
 
-// Simple synchronous hash for backward compatibility (with salt)
-function simpleHash(str) {
-  // Use fixed salt for consistent hashing (for demo purposes)
-  // In production, use a proper bcrypt/argon2
-  const FIXED_SALT = "FlockHub2026";
-  
-  // Simple hash with fixed salt
-  let hash = 0;
-  const salted = FIXED_SALT + str;
-  for (let i = 0; i < salted.length; i++) {
-    const char = salted.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash;
-  }
-  return (hash >>> 0).toString(16);
+// Secure password hashing using Web Crypto API (PBKDF2)
+async function hashPassword(password) {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const encoder = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(password),
+    { name: "PBKDF2" },
+    false,
+    ["deriveBits"]
+  );
+  const hash = await crypto.subtle.deriveBits(
+    { name: "PBKDF2", salt, iterations: 100000, hash: "SHA-256" },
+    keyMaterial,
+    256
+  );
+  // Combine salt and hash for storage
+  const saltHex = Array.from(salt).map(b => b.toString(16).padStart(2, '0')).join('');
+  const hashHex = Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+  return saltHex + ':' + hashHex;
 }
 
-function verifySimpleHash(password, storedHash) {
-  // Verify using the same fixed salt approach
-  const FIXED_SALT = "FlockHub2026";
-  let hash = 0;
-  const salted = FIXED_SALT + password;
-  for (let i = 0; i < salted.length; i++) {
-    const char = salted.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash;
-  }
-  return (hash >>> 0).toString(16) === storedHash;
+async function verifyPassword(password, stored) {
+  if (!stored || !stored.includes(':')) return false;
+  const [saltHex, hashHex] = stored.split(':');
+  const salt = new Uint8Array(saltHex.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+  const encoder = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(password),
+    { name: "PBKDF2" },
+    false,
+    ["deriveBits"]
+  );
+  const hash = await crypto.subtle.deriveBits(
+    { name: "PBKDF2", salt, iterations: 100000, hash: "SHA-256" },
+    keyMaterial,
+    256
+  );
+  const computedHash = Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+  return computedHash === hashHex;
 }
 
 async function onboardHuman(data) {
@@ -256,11 +269,12 @@ async function onboardHuman(data) {
   const existing = await getHuman(id);
   if (existing) return { success: false, error: "Human already exists" };
   const api_key = generateApiKey();
+  const hashedPassword = await hashPassword(password);
   const human = { 
     id, 
     name, 
     email: email || "", 
-    password: password,  // Simple storage for demo
+    password_hash: hashedPassword,
     agents: [], 
     flock_id: null, 
     api_key,
@@ -274,8 +288,8 @@ async function onboardHuman(data) {
 async function verifyHumanPassword(id, password) {
   const human = await getHuman(id);
   if (!human) return null;
-  // Simple direct comparison for demo - store password directly
-  if (human.password === password) {
+  // Use secure async verification
+  if (human.password_hash && await verifyPassword(password, human.password_hash)) {
     return human;
   }
   return null;
