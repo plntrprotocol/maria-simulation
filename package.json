@@ -2,11 +2,9 @@
   "name": "maria-simulation",
   "version": "1.0.0",
   "description": "Digital Twin Simulator Backend",
-  "type": "module",
-  "main": "server/index.js",
+  "main": "server/index.mjs",
   "scripts": {
-    "start": "node server/index.js",
-    "install:server": "cd server && npm install"
+    "start": "node server/index.mjs"
   },
   "keywords": [],
   "author": "",

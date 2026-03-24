@@ -2,7 +2,7 @@ import { Server } from "colyseus";
 import { createServer } from "http";
 import express from "express";
 import cors from "cors";
-import { OpenWorldRoom } from "./room.js";
+import { OpenWorldRoom } from "./room.mjs";
 
 const port = process.env.PORT || 2567;
 const app = express();
