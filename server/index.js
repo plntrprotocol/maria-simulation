@@ -1,8 +1,8 @@
-const { Server } = require("colyseus");
-const { createServer } = require("http");
-const express = require("express");
-const cors = require("cors");
-const { OpenWorldRoom } = require("./room");
+import { Server } from "colyseus";
+import { createServer } from "http";
+import express from "express";
+import cors from "cors";
+import { OpenWorldRoom } from "./room.js";
 
 const port = process.env.PORT || 2567;
 const app = express();

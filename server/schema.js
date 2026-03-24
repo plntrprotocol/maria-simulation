@@ -1,7 +1,7 @@
-const { Schema, type, MapSchema } = require('@colyseus/schema');
+import { Schema, type } from '@colyseus/schema';
 
 // The state of a single agent/player
-class Avatar extends Schema {
+export class Avatar extends Schema {
     constructor(id, name, x, y) {
         super();
         this.id = id;
@@ -15,23 +15,21 @@ class Avatar extends Schema {
         this.socialDrive = 0.5; // Connection
     }
 }
-type("string")(Avatar.prototype, "id");
-type("string")(Avatar.prototype, "name");
-type("number")(Avatar.prototype, "x");
-type("number")(Avatar.prototype, "y");
-type("number")(Avatar.prototype, "targetX");
-type("number")(Avatar.prototype, "targetY");
-type("string")(Avatar.prototype, "state");
-type("number")(Avatar.prototype, "vtaDrive");
-type("number")(Avatar.prototype, "socialDrive");
+type("string", true)(Avatar.prototype, "id");
+type("string", true)(Avatar.prototype, "name");
+type("number", true)(Avatar.prototype, "x");
+type("number", true)(Avatar.prototype, "y");
+type("number", true)(Avatar.prototype, "targetX");
+type("number", true)(Avatar.prototype, "targetY");
+type("string", true)(Avatar.prototype, "state");
+type("number", true)(Avatar.prototype, "vtaDrive");
+type("number", true)(Avatar.prototype, "socialDrive");
 
 // The global state of the Simulation Room
-class SimulationState extends Schema {
+export class SimulationState extends Schema {
     constructor() {
         super();
-        this.avatars = new MapSchema();
+        this.avatars = new Map();
     }
 }
-type({ map: Avatar })(SimulationState.prototype, "avatars");
-
-module.exports = { Avatar, SimulationState };
+type({ map: Avatar }, true)(SimulationState.prototype, "avatars");

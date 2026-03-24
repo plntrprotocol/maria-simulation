@@ -1,7 +1,8 @@
-const { Room } = require('colyseus');
-const { SimulationState, Avatar } = require('./schema');
+import { Room } from 'colyseus';
+import { MapSchema } from '@colyseus/schema';
+import { Avatar, SimulationState } from './schema.js';
 
-class OpenWorldRoom extends Room {
+export class OpenWorldRoom extends Room {
     // When the room is initialized
     onCreate(options) {
         console.log("Room Created: OpenWorldRoom");
@@ -54,7 +55,7 @@ class OpenWorldRoom extends Room {
         const deltaSec = deltaTime / 1000;
         const speed = 3.0; // Units per second
         
-        this.state.avatars.forEach((avatar, key) => {
+        for (const [key, avatar] of this.state.avatars) {
             if (avatar.state === "walking") {
                 const dx = avatar.targetX - avatar.x;
                 const dy = avatar.targetY - avatar.y;
@@ -71,8 +72,6 @@ class OpenWorldRoom extends Room {
                     avatar.state = "idle";
                 }
             }
-        });
+        }
     }
 }
-
-module.exports = { OpenWorldRoom };
