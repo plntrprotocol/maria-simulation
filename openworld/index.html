@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maria Simulation - Digital Twin (2D)</title>
+    
+    <script src="phaser.min.js?v=20260324"></script>
+    <script src="colyseus.js?v=20260324"></script>
+
+    <style>
+        body { margin: 0; padding: 0; overflow: hidden; background-color: #1a1a2e; color: white; font-family: 'Courier New', Courier, monospace; }
+        #game-container { width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; }
+        #ui-layer { position: absolute; top: 10px; left: 10px; z-index: 10; pointer-events: none; }
+        .status-box { background: rgba(0,0,0,0.8); padding: 15px; border: 1px solid #4A90D9; border-radius: 8px; margin-bottom: 5px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        h1 { margin: 0 0 5px 0; fontSize: '16px'; color: #4A90D9; text-transform: uppercase; letter-spacing: 1px; }
+        .debug-text { fontSize: '13px'; color: #aaa; }
+    </style>
+</head>
+<body>
+    <div id="ui-layer">
+        <div class="status-box">
+            <h1>Digital Twin Simulator</h1>
+            <div id="connection-status" class="debug-text">Connecting to Simulation Engine...</div>
+        </div>
+    </div>
+    
+    <div id="game-container"></div>
+
+    <script>
+        const client = new Colyseus.Client('wss://wide-hands-hope.loca.lt');
+        let room;
+
+        const config = {
+            type: Phaser.AUTO,
+            parent: 'game-container',
+            width: window.innerWidth,
+            height: window.innerHeight,
+            pixelArt: true,
+            scene: {
+                preload: preload,
+                create: create,
+                update: update
+            }
+        };
+
+        const game = new Phaser.Game(config);
+        const players = {}; 
+
+        function preload() {
+            console.log("Preload - using procedural graphics");
+        }
+
+        async function create() {
+            const graphics = this.add.graphics();
+            
+            // Grass texture
+            graphics.fillStyle(0x4a7c3f, 1);
+            graphics.fillRect(0, 0, 64, 64);
+            graphics.generateTexture('grass-tile', 64, 64);
+            graphics.clear();
+            
+            // Avatar placeholder
+            graphics.fillStyle(0x4A90D9, 1);
+            graphics.fillRect(0, 0, 24, 32);
+            graphics.generateTexture('avatar-placeholder', 24, 32);
+            graphics.clear();
+            
+            // Building placeholders
+            graphics.fillStyle(0xe8e8e8, 1);
+            graphics.fillRect(0, 0, 80, 60);
+            graphics.generateTexture('flock-home', 80, 60);
+            graphics.clear();
+            
+            graphics.fillStyle(0x8d6e63, 1);
+            graphics.fillRect(0, 0, 80, 60);
+            graphics.generateTexture('coffee-house', 80, 60);
+            graphics.clear();
+            
+            graphics.fillStyle(0x5d4037, 1);
+            graphics.fillRect(0, 0, 80, 60);
+            graphics.generateTexture('library', 80, 60);
+            graphics.clear();
+            
+            graphics.fillStyle(0xffffff, 1);
+            graphics.fillRect(0, 0, 80, 60);
+            graphics.generateTexture('art-gallery', 80, 60);
+            graphics.clear();
+            
+            graphics.fillStyle(0x81c784, 1);
+            graphics.fillRect(0, 0, 80, 60);
+            graphics.generateTexture('conservatory', 80, 60);
+            graphics.destroy();
+
+            // Grass background
+            this.add.rectangle(0, 0, 4000, 4000, 0x4a7c3f).setDepth(-1);
+
+            // Buildings
+            this.add.sprite(0, -100, 'flock-home').setOrigin(0.5, 1);
+            this.add.text(0, -100, 'Flock Home', { fontSize: '14px', fill: '#000', backgroundColor: '#fff', padding: {x:4, y:2} }).setOrigin(0.5, 0);
+
+            this.add.sprite(-300, 150, 'coffee-house').setOrigin(0.5, 1);
+            this.add.text(-300, 150, 'Cafe', { fontSize: '14px', fill: '#fff', backgroundColor: '#000', padding: {x:4, y:2} }).setOrigin(0.5, 0);
+
+            this.add.sprite(300, 150, 'library').setOrigin(0.5, 1);
+            this.add.text(300, 150, 'Library', { fontSize: '14px', fill: '#fff', backgroundColor: '#000', padding: {x:4, y:2} }).setOrigin(0.5, 0);
+
+            this.add.sprite(-250, -300, 'art-gallery').setOrigin(0.5, 1);
+            this.add.text(-250, -300, 'Gallery', { fontSize: '14px', fill: '#000', backgroundColor: '#fff', padding: {x:4, y:2} }).setOrigin(0.5, 0);
+
+            this.add.sprite(250, -300, 'conservatory').setOrigin(0.5, 1);
+            this.add.text(250, -300, 'Conservatory', { fontSize: '14px', fill: '#000', backgroundColor: '#fff', padding: {x:4, y:2} }).setOrigin(0.5, 0);
+
+            // Connect to Engine
+            try {
+                room = await client.joinOrCreate("open_world", { name: "Anduril" });
+                document.getElementById('connection-status').innerText = 'Connected (ID: ' + room.sessionId + ')';
+                document.getElementById('connection-status').style.color = '#4caf50';
+
+                room.state.avatars.onAdd((avatar, sessionId) => {
+                    const sprite = this.add.sprite(avatar.x * 32, avatar.y * 32, 'avatar-placeholder');
+                    sprite.setDepth(10);
+                    
+                    const label = this.add.text(avatar.x * 32, (avatar.y * 32) - 25, avatar.name, {
+                        fontSize: '14px', fill: '#fff', backgroundColor: '#00000099', padding: {x:4, y:2}
+                    }).setOrigin(0.5);
+                    label.setDepth(11);
+
+                    players[sessionId] = { sprite: sprite, label: label, serverState: avatar };
+
+                    if (sessionId === room.sessionId) {
+                        this.cameras.main.startFollow(sprite, true, 0.1, 0.1);
+                        this.cameras.main.setZoom(1.5);
+                    }
+                });
+
+                room.state.avatars.onRemove((avatar, sessionId) => {
+                    if (players[sessionId]) {
+                        players[sessionId].sprite.destroy();
+                        players[sessionId].label.destroy();
+                        delete players[sessionId];
+                    }
+                });
+
+                this.input.on('pointerdown', (pointer) => {
+                    const worldPoint = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
+                    room.send("move", { x: worldPoint.x / 32, y: worldPoint.y / 32 });
+                });
+
+            } catch (e) {
+                console.error("JOIN ERROR", e);
+                document.getElementById('connection-status').innerText = "Engine Connection Failed";
+                document.getElementById('connection-status').style.color = '#f44336';
+            }
+        }
+
+        function update() {
+            for (let sessionId in players) {
+                const player = players[sessionId];
+                const targetX = player.serverState.x * 32; 
+                const targetY = player.serverState.y * 32;
+                
+                player.sprite.x += (targetX - player.sprite.x) * 0.2;
+                player.sprite.y += (targetY - player.sprite.y) * 0.2;
+                
+                player.label.x = player.sprite.x;
+                player.label.y = player.sprite.y - 25;
+            }
+        }
+
+        window.addEventListener('resize', () => {
+            game.scale.resize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
